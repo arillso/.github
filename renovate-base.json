@@ -1,0 +1,48 @@
+{
+    "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+    "extends": ["config:recommended", ":semanticCommits"],
+    "schedule": ["before 6am on Monday"],
+    "timezone": "Europe/Zurich",
+    "labels": ["dependencies"],
+    "prConcurrentLimit": 5,
+    "prHourlyLimit": 0,
+    "minimumReleaseAge": "3 days",
+    "rebaseWhen": "behind-base-branch",
+    "reviewersFromCodeOwners": true,
+    "assigneesFromCodeOwners": true,
+    "commitMessagePrefix": "chore(deps): ",
+    "dependencyDashboard": true,
+    "dependencyDashboardLabels": ["dependencies", "renovate"],
+    "packageRules": [
+        {
+            "description": "Group patch updates & automerge",
+            "matchUpdateTypes": ["patch"],
+            "groupName": "patch-updates",
+            "automerge": true,
+            "automergeType": "pr",
+            "automergeStrategy": "squash",
+            "platformAutomerge": true
+        },
+        {
+            "description": "Group GitHub Actions & automerge",
+            "matchManagers": ["github-actions"],
+            "groupName": "github-actions",
+            "automerge": true,
+            "platformAutomerge": true
+        },
+        {
+            "description": "Major updates manual",
+            "matchUpdateTypes": ["major"],
+            "automerge": false,
+            "dependencyDashboardApproval": true,
+            "labels": ["dependencies", "major-update"]
+        }
+    ],
+    "vulnerabilityAlerts": {
+        "labels": ["dependencies", "security"],
+        "addLabels": ["priority-high"],
+        "prPriority": 20,
+        "automerge": true,
+        "schedule": ["at any time"]
+    }
+}

@@ -1,0 +1,9 @@
+# OS files
+.DS_Store
+
+# IDE
+.idea/
+.vscode/
+
+# Local
+.ansible/

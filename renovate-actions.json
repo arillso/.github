@@ -1,0 +1,28 @@
+{
+    "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+    "extends": ["github>arillso/arillso:renovate-base"],
+    "packageRules": [
+        {
+            "description": "Group GitHub Actions dependencies",
+            "matchManagers": ["github-actions"],
+            "groupName": "github-actions",
+            "automerge": true,
+            "platformAutomerge": true
+        },
+        {
+            "description": "Group Docker images",
+            "matchManagers": ["dockerfile"],
+            "groupName": "docker-images"
+        },
+        {
+            "description": "Group Go dependencies",
+            "matchManagers": ["gomod"],
+            "groupName": "golang-dependencies"
+        },
+        {
+            "description": "Pin GitHub Actions to SHA",
+            "matchManagers": ["github-actions"],
+            "pinDigests": true
+        }
+    ]
+}

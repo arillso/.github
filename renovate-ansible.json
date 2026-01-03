@@ -1,0 +1,25 @@
+{
+    "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+    "extends": ["github>arillso/arillso:renovate-base"],
+    "packageRules": [
+        {
+            "description": "Group Ansible Galaxy collections",
+            "matchManagers": ["ansible-galaxy"],
+            "groupName": "ansible-collections"
+        },
+        {
+            "description": "Group Ansible Galaxy roles",
+            "matchManagers": ["ansible-galaxy"],
+            "matchDepTypes": ["role"],
+            "groupName": "ansible-roles"
+        },
+        {
+            "description": "Group Python dependencies (ansible-core)",
+            "matchManagers": ["pip_requirements", "pip_setup"],
+            "groupName": "python-dependencies"
+        }
+    ],
+    "ansible-galaxy": {
+        "fileMatch": ["(^|/)requirements\\.ya?ml$", "(^|/)galaxy\\.ya?ml$"]
+    }
+}
