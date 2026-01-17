@@ -26,5 +26,18 @@
     ],
     "ansible-galaxy": {
         "fileMatch": ["(^|/)requirements\\.ya?ml$", "(^|/)galaxy\\.ya?ml$"]
-    }
+    },
+    "customManagers": [
+        {
+            "customType": "regex",
+            "managerFilePatterns": [
+                "/^roles/.*/defaults/main\\.yml$/"
+            ],
+            "matchStrings": [
+                "#\\s*renovate:\\s*datasource=(?<datasource>\\S+)\\s+depName=(?<depName>\\S+)(?:\\s+extractVersion=(?<extractVersion>\\S+))?(?:\\s+versioning=(?<versioning>\\S+))?\\s*(?:\\r?\\n|\\r).*?:\\s*[\"']?(?<currentValue>[^\"'\\s]+)[\"']?\\s*(?:\\r?\\n|\\r|$)"
+            ],
+            "extractVersionTemplate": "{{#if extractVersion}}{{{extractVersion}}}{{else}}^(?<version>.*)${{/if}}",
+            "versioningTemplate": "{{#if versioning}}{{{versioning}}}{{else}}semver{{/if}}"
+        }
+    ]
 }
