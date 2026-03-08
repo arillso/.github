@@ -41,4 +41,14 @@ Initial repository setup:
 
 - **ci-go-action.yml**: Replace abandoned `ibiqlik/action-yamllint` with native `pip install yamllint`
 - **cleanup-container-registry.yml**: Replace abandoned `philiplehmann/docker-hub-retention` with Docker Hub API script
-- **templates/workflows/ci.yml**: Replace abandoned yamllint action with native pip install
+- **templates/workflows/ci.yml**: Simplified to use reusable `ci-go-action.yml` workflow
+- **templates/workflows/codeql.yml**: Simplified to use reusable `security-codeql.yml` workflow
+- **templates/workflows/deploy.yml**: Updated action SHAs, added standalone template note
+- **GitHub Actions**: Updated SHA-pinned action references via Renovate
+  - `actions/upload-artifact` v4 → v7
+  - `artis3n/ansible_galaxy_collection` v2 → v3
+  - `docker/build-push-action` v6 → v7
+  - `docker/setup-buildx-action` v3 → v4
+  - `github/codeql-action` updated to latest SHA
+  - `golangci/golangci-lint-action` v6 → v9
+  - `aquasecurity/trivy-action` updated to latest SHA
