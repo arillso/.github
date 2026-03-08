@@ -107,8 +107,13 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
 
+      - name: Install yamllint
+        run: pip install yamllint
+
       - name: Run yamllint
-        uses: ibiqlik/action-yamllint@2576378a8e339169678f9939646ee3ee325e845c # v3
-        with:
-          config_file: ${{ inputs.yamllint_config }}
-          strict: ${{ inputs.yamllint_strict }}
+        run: |
+          ARGS=""
+          if [ "${{ inputs.yamllint_strict }}" == "true" ]; then
+            ARGS="--strict"
+          fi
+          yamllint -c ${{ inputs.yamllint_config }} $ARGS .

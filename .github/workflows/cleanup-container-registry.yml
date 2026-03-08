@@ -72,15 +72,58 @@ jobs:
     if: ${{ inputs.enable_dockerhub }}
     steps:
       - name: Docker Hub Image Cleanup
-        uses: philiplehmann/docker-hub-retention@af4891bac44f14c7754a17d1632baf7745329e67 # v0.0.6
-        with:
-          repository: ${{ inputs.dockerhub_repository }}
-          username: ${{ inputs.dockerhub_username }}
-          password: ${{ secrets.dockerhub_token }}
-          multiple: |
-            - match: sha-[0-9a-f]{7}
-              retention: ${{ inputs.dockerhub_retention_days }}
-          dryrun: "false"
+        env:
+          DOCKERHUB_USERNAME: ${{ inputs.dockerhub_username }}
+          DOCKERHUB_TOKEN: ${{ secrets.dockerhub_token }}
+          DOCKERHUB_REPO: ${{ inputs.dockerhub_repository }}
+          RETENTION_DAYS: ${{ inputs.dockerhub_retention_days }}
+        run: |
+          # Authenticate with Docker Hub
+          TOKEN=$(curl -s -H "Content-Type: application/json" \
+            -X POST -d '{"username":"'"$DOCKERHUB_USERNAME"'","password":"'"$DOCKERHUB_TOKEN"'"}' \
+            https://hub.docker.com/v2/users/login/ | jq -r .token)
+
+          # Parse retention days (remove 'd' suffix if present)
+          DAYS=$(echo "$RETENTION_DAYS" | sed 's/d$//')
+          CUTOFF_DATE=$(date -u -d "-${DAYS} days" +%Y-%m-%dT%H:%M:%S.%NZ 2>/dev/null \
+            || date -u -v-${DAYS}d +%Y-%m-%dT%H:%M:%S.000000000Z)
+
+          echo "Cleaning tags older than $DAYS days (before $CUTOFF_DATE)"
+          echo "Repository: $DOCKERHUB_REPO"
+
+          # List and delete old sha-* tags
+          PAGE=1
+          DELETED=0
+          while true; do
+            RESPONSE=$(curl -s -H "Authorization: Bearer $TOKEN" \
+              "https://hub.docker.com/v2/repositories/${DOCKERHUB_REPO}/tags/?page_size=100&page=${PAGE}")
+
+            TAGS=$(echo "$RESPONSE" | jq -r '.results[]? | select(.name | test("^sha-[0-9a-f]{7}")) | select(.last_updated < "'"$CUTOFF_DATE"'") | .name')
+
+            if [ -z "$TAGS" ]; then
+              NEXT=$(echo "$RESPONSE" | jq -r '.next // empty')
+              if [ -z "$NEXT" ]; then
+                break
+              fi
+              PAGE=$((PAGE + 1))
+              continue
+            fi
+
+            for TAG in $TAGS; do
+              echo "Deleting tag: $TAG"
+              curl -s -X DELETE -H "Authorization: Bearer $TOKEN" \
+                "https://hub.docker.com/v2/repositories/${DOCKERHUB_REPO}/tags/${TAG}/"
+              DELETED=$((DELETED + 1))
+            done
+
+            NEXT=$(echo "$RESPONSE" | jq -r '.next // empty')
+            if [ -z "$NEXT" ]; then
+              break
+            fi
+            PAGE=$((PAGE + 1))
+          done
+
+          echo "Deleted $DELETED tags from Docker Hub"
 
   ghcr-cleanup:
     name: GitHub Container Registry Cleanup

@@ -36,3 +36,9 @@ Initial repository setup:
 - **cleanup-container-registry.yml**: Automated GHCR and Docker Hub cleanup
 - **ai-claude.yml**: Interactive Claude Code assistant via @claude mentions
 - **ai-claude-review.yml**: Automated AI code reviews on pull requests
+
+### Changed
+
+- **ci-go-action.yml**: Replace abandoned `ibiqlik/action-yamllint` with native `pip install yamllint`
+- **cleanup-container-registry.yml**: Replace abandoned `philiplehmann/docker-hub-retention` with Docker Hub API script
+- **templates/workflows/ci.yml**: Replace abandoned yamllint action with native pip install
