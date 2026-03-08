@@ -1,0 +1,114 @@
+---
+name: CI - Go Action
+
+on:
+  workflow_call:
+    inputs:
+      go_version:
+        description: 'Go version (or "file" to read from go.mod)'
+        required: false
+        type: string
+        default: 'file'
+      enable_golangci_lint:
+        description: 'Enable golangci-lint'
+        required: false
+        type: boolean
+        default: true
+      enable_actionlint:
+        description: 'Enable actionlint'
+        required: false
+        type: boolean
+        default: true
+      enable_shellcheck:
+        description: 'Enable shellcheck'
+        required: false
+        type: boolean
+        default: false
+      enable_yamllint:
+        description: 'Enable yamllint'
+        required: false
+        type: boolean
+        default: true
+      yamllint_config:
+        description: 'Path to yamllint config file'
+        required: false
+        type: string
+        default: '.yamllint.yml'
+      yamllint_strict:
+        description: 'Run yamllint in strict mode'
+        required: false
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+jobs:
+  golangci-lint:
+    name: Go Lint
+    runs-on: ubuntu-latest
+    if: ${{ inputs.enable_golangci_lint }}
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6
+
+      - name: Setup Go (from file)
+        if: ${{ inputs.go_version == 'file' }}
+        uses: actions/setup-go@4dc6199c7b1a012772edbd06daecab0f50c9053c # v6
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - name: Setup Go (specific version)
+        if: ${{ inputs.go_version != 'file' }}
+        uses: actions/setup-go@4dc6199c7b1a012772edbd06daecab0f50c9053c # v6
+        with:
+          go-version: ${{ inputs.go_version }}
+          cache: true
+
+      - name: Run golangci-lint
+        uses: golangci/golangci-lint-action@1e7e51e771db61008b38414a730f564565cf7c20 # v9
+        with:
+          version: latest
+
+  actionlint:
+    name: Action Lint
+    runs-on: ubuntu-latest
+    if: ${{ inputs.enable_actionlint }}
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6
+
+      - name: Run actionlint
+        uses: reviewdog/action-actionlint@83e4ed25b168066ad8f62f5afbb29ebd8641d982 # v1
+        with:
+          reporter: github-pr-review
+          fail_level: error
+
+  shellcheck:
+    name: Shell Check
+    runs-on: ubuntu-latest
+    if: ${{ inputs.enable_shellcheck }}
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6
+
+      - name: Run shellcheck
+        uses: reviewdog/action-shellcheck@ccaafec556ffa154f112bfcb7b9c9574190b7091 # v1
+        with:
+          reporter: github-pr-review
+          fail_level: error
+
+  yamllint:
+    name: YAML Lint
+    runs-on: ubuntu-latest
+    if: ${{ inputs.enable_yamllint }}
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6
+
+      - name: Run yamllint
+        uses: ibiqlik/action-yamllint@2576378a8e339169678f9939646ee3ee325e845c # v3
+        with:
+          config_file: ${{ inputs.yamllint_config }}
+          strict: ${{ inputs.yamllint_strict }}

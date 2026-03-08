@@ -860,7 +860,9 @@ Brief description (1-2 sentences) of what the role does.
 
 For detailed documentation including all variables, examples, and usage instructions, see:
 
-**[https://guide.arillso.io/collections/arillso/collection_name/role_name_role.html](https://guide.arillso.io/collections/arillso/collection_name/role_name_role.html)**
+**[Complete Documentation][docs]**
+
+[docs]: https://guide.arillso.io/collections/arillso/collection_name/role_name_role.html?utm_source=github&utm_medium=readme&utm_campaign=documentation&utm_content=role_name_role
 
 ## Quick Start
 
@@ -886,7 +888,7 @@ This role was created by [arillso](https://github.com/arillso).
 - **Features section**: 3-5 bullet points highlighting key capabilities
 - Only provide a quick start example
 - Link to the guide page for complete documentation and all variables
-- Guide URL pattern: `https://guide.arillso.io/collections/arillso/{collection}/{role}_role.html`
+- Guide URL pattern: `https://guide.arillso.io/collections/arillso/{collection}/{role}_role.html?utm_source=github&utm_medium=readme&utm_campaign=documentation&utm_content={role}_role`
 - No variable documentation in README - users should refer to the guide or `argument_specs.yml`
 
 ### CONTRIBUTING.md

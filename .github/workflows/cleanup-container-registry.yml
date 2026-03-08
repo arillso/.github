@@ -1,0 +1,141 @@
+---
+name: Cleanup - Container Registry
+
+on:
+  workflow_call:
+    inputs:
+      account:
+        description: 'GitHub account or organization name'
+        required: false
+        type: string
+        default: 'arillso'
+      image_names:
+        description: 'Comma-separated list of image names'
+        required: true
+        type: string
+      cut_off:
+        description: 'Keep images newer than this (e.g., 60d, 90d)'
+        required: false
+        type: string
+        default: '60d'
+      keep_n_most_recent:
+        description: 'Keep N most recent images'
+        required: false
+        type: number
+        default: 5
+      enable_dockerhub:
+        description: 'Enable Docker Hub cleanup'
+        required: false
+        type: boolean
+        default: false
+      dockerhub_repository:
+        description: 'Docker Hub repository (e.g., arillso/ansible)'
+        required: false
+        type: string
+        default: ''
+      dockerhub_username:
+        description: 'Docker Hub username'
+        required: false
+        type: string
+        default: ''
+      dockerhub_retention_days:
+        description: 'Docker Hub retention in days'
+        required: false
+        type: string
+        default: '60d'
+      cron_schedule:
+        description: 'Cron schedule for cleanup'
+        required: false
+        type: string
+        default: '0 2 1 * *'
+      enable_summary:
+        description: 'Enable cleanup summary report'
+        required: false
+        type: boolean
+        default: true
+    secrets:
+      dockerhub_token:
+        description: 'Docker Hub token (required if enable_dockerhub is true)'
+        required: false
+      github_token:
+        description: 'GitHub token for GHCR access'
+        required: false
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  docker-hub-cleanup:
+    name: Docker Hub Cleanup
+    runs-on: ubuntu-latest
+    if: ${{ inputs.enable_dockerhub }}
+    steps:
+      - name: Docker Hub Image Cleanup
+        uses: philiplehmann/docker-hub-retention@af4891bac44f14c7754a17d1632baf7745329e67 # v0.0.6
+        with:
+          repository: ${{ inputs.dockerhub_repository }}
+          username: ${{ inputs.dockerhub_username }}
+          password: ${{ secrets.dockerhub_token }}
+          multiple: |
+            - match: sha-[0-9a-f]{7}
+              retention: ${{ inputs.dockerhub_retention_days }}
+          dryrun: "false"
+
+  ghcr-cleanup:
+    name: GitHub Container Registry Cleanup
+    runs-on: ubuntu-latest
+    permissions:
+      packages: write
+    steps:
+      - name: Delete old untagged images
+        uses: snok/container-retention-policy@3b0972b2276b171b212f8c4efbca59ebba26eceb # v3.0.1
+        with:
+          account: ${{ inputs.account }}
+          token: ${{ secrets.github_token || secrets.GITHUB_TOKEN }}
+          image-names: ${{ inputs.image_names }}
+          cut-off: ${{ inputs.cut_off }}
+          keep-n-most-recent: ${{ inputs.keep_n_most_recent }}
+          tag-selection: untagged
+          dry-run: "false"
+
+  cleanup-summary:
+    name: Cleanup Summary
+    needs: [docker-hub-cleanup, ghcr-cleanup]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    if: ${{ always() && inputs.enable_summary }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6
+
+      - name: Build summary arguments
+        id: build_args
+        run: |
+          ARGS=""
+          if [ "${{ inputs.enable_dockerhub }}" == "true" ]; then
+            ARGS="DockerHub=${{ needs.docker-hub-cleanup.result }} "
+          fi
+          ARGS="${ARGS}GHCR=${{ needs.ghcr-cleanup.result }}"
+          echo "args=$ARGS" >> $GITHUB_OUTPUT
+
+      - name: Execute cleanup summary script
+        run: |
+          if [ -f "./.github/scripts/cleanup-summary.sh" ]; then
+            ./.github/scripts/cleanup-summary.sh ${{ steps.build_args.outputs.args }}
+          else
+            echo "# Cleanup Summary" > cleanup-report.md
+            echo "" >> cleanup-report.md
+            if [ "${{ inputs.enable_dockerhub }}" == "true" ]; then
+              echo "- Docker Hub: ${{ needs.docker-hub-cleanup.result }}" >> cleanup-report.md
+            fi
+            echo "- GHCR: ${{ needs.ghcr-cleanup.result }}" >> cleanup-report.md
+          fi
+
+      - name: Upload Cleanup Report
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
+        with:
+          name: cleanup-report
+          path: cleanup-report.md
+          retention-days: 30

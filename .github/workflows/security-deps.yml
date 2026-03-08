@@ -1,0 +1,141 @@
+---
+name: Security - Dependencies
+
+on:
+  workflow_call:
+    inputs:
+      working-directory:
+        type: string
+        default: '.'
+        description: 'Working directory for scans'
+      fail-on-severity:
+        type: string
+        default: 'moderate'
+        description: 'Minimum severity to fail (low, moderate, high, critical)'
+      enable-license-check:
+        type: boolean
+        default: true
+        description: 'Enable license compliance checking'
+      allowed-licenses:
+        type: string
+        default: 'Apache-2.0,BSD-2-Clause,BSD-3-Clause,ISC,MIT,0BSD,CC0-1.0'
+        description: 'Comma-separated list of allowed licenses'
+      denied-licenses:
+        type: string
+        default: 'GPL-2.0,GPL-3.0,AGPL-3.0'
+        description: 'Comma-separated list of denied licenses'
+      fail-on-license-violation:
+        type: boolean
+        default: false
+        description: 'Fail workflow on license violations'
+
+permissions:
+  contents: read
+  pull-requests: write
+  security-events: write
+
+jobs:
+  dependency-review:
+    name: Dependency Review (GitHub)
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request' && github.event.repository.visibility == 'public'
+    timeout-minutes: 10
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Dependency Review
+        uses: actions/dependency-review-action@2031cfc080254a8a887f58cffee85186f0e49e48 # v4.9.0
+        with:
+          fail-on-severity: ${{ inputs.fail-on-severity }}
+          allow-licenses: ${{ inputs.allowed-licenses }}
+          license-check: ${{ inputs.enable-license-check }}
+          vulnerability-check: true
+          comment-summary-in-pr: true
+
+  go-audit:
+    name: Audit Go
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Setup Go
+        uses: actions/setup-go@4b73464bb391d4059bd26b0524d20df3927bd417 # v6.3.0
+        with:
+          go-version-file: 'go.mod'
+          cache: true
+
+      - name: Run govulncheck
+        working-directory: ${{ inputs.working-directory }}
+        run: |
+          go install golang.org/x/vuln/cmd/govulncheck@latest
+          govulncheck -json ./... | tee govulncheck.json
+
+          if [ -s govulncheck.json ]; then
+            echo "::warning::Vulnerabilities detected by govulncheck"
+            jq -r '.message // empty' govulncheck.json | head -10
+          else
+            echo "::notice::No vulnerabilities found"
+          fi
+
+      - name: Check Go licenses
+        if: inputs.enable-license-check
+        working-directory: ${{ inputs.working-directory }}
+        run: |
+          go install github.com/google/go-licenses@latest
+          echo "Checking Go dependency licenses..."
+          go-licenses check ./... --allowed_licenses=${{ inputs.allowed-licenses }} 2>&1 | tee go-licenses.txt || true
+          go-licenses csv ./... > go-licenses.csv 2>&1 || true
+
+      - name: Upload audit results
+        if: always()
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
+        with:
+          name: go-audit-results
+          path: |
+            ${{ inputs.working-directory }}/govulncheck.json
+            ${{ inputs.working-directory }}/go-licenses.txt
+            ${{ inputs.working-directory }}/go-licenses.csv
+          retention-days: 30
+          if-no-files-found: ignore
+
+  security-report:
+    name: Create Report
+    runs-on: ubuntu-latest
+    needs: [dependency-review, go-audit]
+    if: always() && !cancelled()
+    steps:
+      - name: Generate Security Report
+        run: |
+          TIMESTAMP=$(date -u '+%Y-%m-%d %H:%M:%S UTC')
+
+          cat >> "$GITHUB_STEP_SUMMARY" << EOF
+          # Dependencies & License Compliance Report
+
+          **Timestamp:** $TIMESTAMP
+          **License Check:** ${{ inputs.enable-license-check && 'Enabled' || 'Disabled' }}
+
+          ## Scan Results
+
+          | Component | Status |
+          |-----------|--------|
+          | Dependency Review | ${{ needs.dependency-review.result }} |
+          | Go Audit | ${{ needs.go-audit.result }} |
+
+          ## Tools Used
+
+          - **govulncheck**: Official Go vulnerability scanner
+          - **go-licenses**: Google license compliance tool
+          - **GitHub Dependency Review**: Native GitHub PR dependency analysis
+
+          ## License Configuration
+
+          **Allowed Licenses:** \`${{ inputs.allowed-licenses }}\`
+          **Denied Licenses:** \`${{ inputs.denied-licenses }}\`
+          **Fail on Violation:** ${{ inputs.fail-on-license-violation }}
+
+          ---
+          *Dependency security and license compliance analysis completed*
+          EOF

@@ -1,0 +1,77 @@
+---
+name: Release - Ansible Collection
+
+on:
+  workflow_call:
+    inputs:
+      collection_namespace:
+        description: 'Collection namespace (e.g., arillso)'
+        required: false
+        type: string
+        default: 'arillso'
+      collection_name:
+        description: 'Collection name (e.g., system)'
+        required: true
+        type: string
+      python_version:
+        description: 'Python version to use'
+        required: false
+        type: string
+        default: '3.11'
+    secrets:
+      galaxy_api_key:
+        description: 'Ansible Galaxy API key'
+        required: true
+
+permissions:
+  contents: write
+
+jobs:
+  publish:
+    name: Publish to Ansible Galaxy
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6
+
+      - name: Get version from tag
+        id: get_version
+        run: echo "VERSION=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
+
+      - name: Extract changelog for version
+        id: changelog
+        run: |
+          VERSION="${{ steps.get_version.outputs.VERSION }}"
+          # Extract the section for this version from CHANGELOG.md
+          if [ -f "CHANGELOG.md" ]; then
+            # Get content between this version and the next version heading
+            CONTENT=$(sed -n "/## \[$VERSION\]/,/## \[/p" CHANGELOG.md | sed '$d')
+            # If the version section is empty, try without brackets
+            if [ -z "$CONTENT" ]; then
+              CONTENT=$(sed -n "/## $VERSION/,/## /p" CHANGELOG.md | sed '$d')
+            fi
+            # Save to file for multiline support
+            echo "$CONTENT" > /tmp/changelog.txt
+            echo "found=true" >> $GITHUB_OUTPUT
+          else
+            echo "found=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Set up Python
+        uses: actions/setup-python@83679a892e2d95755f2dac6acb0bfd1e9ac5d548 # v6
+        with:
+          python-version: ${{ inputs.python_version }}
+
+      - name: Build and Publish Collection
+        uses: artis3n/ansible_galaxy_collection@415a92b829b5898b6e8ca1dd7a69fe2a1e5fd4c0 # v2
+        with:
+          api_key: ${{ secrets.galaxy_api_key }}
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@a06a81a03ee405af7f2048a818ed3f03bbf83c7b # v2
+        with:
+          body_path: ${{ steps.changelog.outputs.found == 'true' && '/tmp/changelog.txt' || '' }}
+          generate_release_notes: ${{ steps.changelog.outputs.found != 'true' }}
+          draft: false
+          prerelease: false

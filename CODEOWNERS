@@ -1,0 +1,26 @@
+# Code Owners for Arillso Organization
+#
+# These owners will be automatically requested for review when PRs touch certain files.
+# More info: https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners
+
+# Global owners for all files
+* @sbaerlocher
+
+# Organization-wide governance files
+/CODE_OF_CONDUCT.md @sbaerlocher
+/CONTRIBUTING.md @sbaerlocher
+/GOVERNANCE.md @sbaerlocher
+/SECURITY.md @sbaerlocher
+/STANDARDS.md @sbaerlocher
+
+# Templates and configurations
+/templates/ @sbaerlocher
+/renovate*.json @sbaerlocher
+
+# Workflows
+/.github/workflows/ @sbaerlocher
+
+# Documentation
+/profile/ @sbaerlocher
+/SUPPORT.md @sbaerlocher
+/README.md @sbaerlocher
