@@ -22,7 +22,7 @@ on:
         description: 'JSON array of Ansible versions to test'
         required: false
         type: string
-        default: '["stable-2.16", "stable-2.17", "devel"]'
+        default: '["stable-2.18", "stable-2.19", "stable-2.20"]'
       enable_integration_tests:
         description: 'Enable integration tests'
         required: false

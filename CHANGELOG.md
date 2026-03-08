@@ -41,6 +41,8 @@ Initial repository setup:
 
 - **security-secrets.yml**: Replace `gitleaks-action` (requires paid license for orgs)
   with direct Gitleaks CLI installation via `jaxxstorm/action-install-gh-release`
+- **ci-ansible-collection.yml**: Update default Ansible versions from EOL
+  `stable-2.16`/`stable-2.17`/`devel` to supported `stable-2.18`/`stable-2.19`/`stable-2.20`
 
 ### Changed
 
