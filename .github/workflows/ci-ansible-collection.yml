@@ -163,8 +163,16 @@ jobs:
       - name: Determine Python version
         id: python_version
         run: |
-          if [[ "${{ matrix.ansible-version }}" == "devel" ]]; then
+          ANSIBLE_VER="${{ matrix.ansible-version }}"
+          if [[ "$ANSIBLE_VER" == "devel" ]]; then
             echo "version=3.12" >> $GITHUB_OUTPUT
+          elif [[ "$ANSIBLE_VER" =~ ^stable-([0-9]+)\.([0-9]+)$ ]]; then
+            MINOR="${BASH_REMATCH[2]}"
+            if [[ "$MINOR" -ge 20 ]]; then
+              echo "version=3.12" >> $GITHUB_OUTPUT
+            else
+              echo "version=${{ inputs.python_version }}" >> $GITHUB_OUTPUT
+            fi
           else
             echo "version=${{ inputs.python_version }}" >> $GITHUB_OUTPUT
           fi
