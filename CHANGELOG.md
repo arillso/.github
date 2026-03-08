@@ -37,6 +37,11 @@ Initial repository setup:
 - **ai-claude.yml**: Interactive Claude Code assistant via @claude mentions
 - **ai-claude-review.yml**: Automated AI code reviews on pull requests
 
+### Fixed
+
+- **security-secrets.yml**: Replace `gitleaks-action` (requires paid license for orgs)
+  with direct Gitleaks CLI installation via `jaxxstorm/action-install-gh-release`
+
 ### Changed
 
 - **ci-go-action.yml**: Replace abandoned `ibiqlik/action-yamllint` with native `pip install yamllint`
