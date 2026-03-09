@@ -24,6 +24,10 @@ jobs:
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           prompt: |
-            Review this PR. Check code quality, bugs, performance, security.
-            Use CLAUDE.md for conventions. Post review via `gh pr comment`.
+            Review ONLY the changes in this PR, not the entire codebase.
+            First run `gh pr diff ${{ github.event.pull_request.number }}` to see the diff.
+            Then run `gh pr view ${{ github.event.pull_request.number }}` for context.
+            Focus your review on: code quality, bugs, performance, and security.
+            Use CLAUDE.md for project conventions if present.
+            Post your review as a single comment via `gh pr comment ${{ github.event.pull_request.number }}`.
           claude_args: '--allowed-tools "Bash(gh pr comment:*),Bash(gh pr diff:*),Bash(gh pr view:*)"'
