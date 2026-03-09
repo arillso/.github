@@ -6,6 +6,15 @@ This is a rolling release - changes are deployed continuously to `main`.
 
 ---
 
+## 2026-03-09
+
+### Fixed
+
+- **ai-claude-review.yml**: Scope Claude review to PR diff only instead of
+  reviewing the entire codebase
+
+---
+
 ## 2026-03-08
 
 ### Added
