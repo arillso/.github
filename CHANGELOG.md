@@ -8,6 +8,11 @@ This is a rolling release - changes are deployed continuously to `main`.
 
 ## 2026-03-09
 
+### Changed
+
+- **ai-claude-review.yml**: Switch from manual review prompt to official
+  Anthropic `code-review` plugin via `claude-code-plugins`
+
 ### Fixed
 
 - **ai-claude-review.yml**: Scope Claude review to PR diff only instead of
