@@ -22,6 +22,13 @@ import yaml
 ROLES_DIR = Path("roles")
 
 
+def is_jinja2_template(value):
+    """Check if a value is or contains a Jinja2 template expression."""
+    if isinstance(value, str):
+        return "{{" in value or "{%" in value
+    return False
+
+
 def load_yaml(path):
     """Load a YAML file and return its contents."""
     if not path.exists():
@@ -93,7 +100,7 @@ def check_defaults_against_suboptions(spec_meta, default_value, spec_file, defau
         if spec_type == "dict" and isinstance(default_value, dict) and default_value:
             keys = list(default_value.keys())
             all_snake_case = all(
-                k == k.lower() and k.replace("_", "").replace(".", "").isalnum()
+                k == k.lower() and k.replace("_", "").replace(".", "").replace("-", "").isalnum()
                 for k in keys
                 if k != "default"
             )
@@ -139,10 +146,10 @@ def check_defaults_against_suboptions(spec_meta, default_value, spec_file, defau
         if not isinstance(sub_meta, dict):
             continue
 
-        # Compare suboption default with actual value in parent default
+        # Compare suboption default with actual value (skip Jinja2 templates)
         if "default" in sub_meta:
             for item in items_to_check:
-                if key in item and sub_meta["default"] != item[key]:
+                if key in item and not is_jinja2_template(item[key]) and sub_meta["default"] != item[key]:
                     issues.append((
                         "warning",
                         defaults_file,
@@ -200,10 +207,10 @@ def check_role(role_path):
     for var in sorted(defaults_vars & argspec_vars):
         meta = argspec_options.get(var, {})
 
-        # Top-level default value mismatch
-        if "default" in meta:
+        # Top-level default value mismatch (skip Jinja2 templates)
+        actual_default = defaults.get(var)
+        if "default" in meta and not is_jinja2_template(actual_default):
             spec_default = meta["default"]
-            actual_default = defaults.get(var)
             if spec_default != actual_default:
                 issues.append((
                     "warning",
