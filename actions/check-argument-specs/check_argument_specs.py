@@ -5,9 +5,11 @@ Checks:
     1. Variables in defaults/ but missing from argument_specs (error)
     2. Variables in argument_specs but missing from defaults/ (warning)
     3. Default value mismatches between defaults/ and argument_specs (warning)
-    4. Missing description in argument_specs options (warning)
-    5. Missing type in argument_specs options (warning)
-    6. Recursive suboptions validation for dict/list-of-dict types (warning)
+    4. Missing description in argument_specs options/suboptions (warning)
+    5. Missing type in argument_specs options/suboptions (warning)
+    6. Recursive suboptions quality validation (independent of default values)
+    7. Default value keys not covered by suboptions (warning)
+    8. Suboption default mismatches against parent default value (warning)
 
 Outputs GitHub Actions annotations (::error::, ::warning::) for PR integration.
 """
@@ -46,33 +48,56 @@ def extract_argspec_options(argument_specs):
     return options_map
 
 
-def resolve_default_keys(value):
-    """Extract dict keys from a default value, handling lists of dicts.
-
-    For a dict: returns the dict's keys.
-    For a list of dicts: returns the union of all dicts' keys.
-    Otherwise: returns an empty set.
-    """
-    if isinstance(value, dict):
-        return set(value.keys())
-    if isinstance(value, list):
-        keys = set()
-        for item in value:
-            if isinstance(item, dict):
-                keys.update(item.keys())
-        return keys
-    return set()
-
-
-def check_suboptions(spec_meta, default_value, file_path, var_prefix, issues):
-    """Recursively check suboptions against default values."""
-    spec_type = spec_meta.get("type", "")
-    suboptions = spec_meta.get("options", {})
-
-    if not isinstance(suboptions, dict) or not suboptions:
+def check_spec_quality(options, file_path, prefix, issues):
+    """Recursively check that all options/suboptions have description and type."""
+    if not isinstance(options, dict):
         return
 
-    # Determine actual dict(s) to check against
+    for key, meta in sorted(options.items()):
+        if not isinstance(meta, dict):
+            continue
+
+        full_key = f"{prefix}.{key}" if prefix else key
+
+        if not meta.get("description"):
+            issues.append((
+                "warning",
+                file_path,
+                full_key,
+                "missing 'description' in argument_specs",
+            ))
+
+        if not meta.get("type"):
+            issues.append((
+                "warning",
+                file_path,
+                full_key,
+                "missing 'type' in argument_specs",
+            ))
+
+        # Recurse into suboptions regardless of default values
+        suboptions = meta.get("options")
+        if isinstance(suboptions, dict) and suboptions:
+            check_spec_quality(suboptions, file_path, full_key, issues)
+
+
+def check_defaults_against_suboptions(spec_meta, default_value, spec_file, defaults_file, var_prefix, issues):
+    """Recursively check that keys in default values are covered by suboptions."""
+    spec_type = spec_meta.get("type", "")
+    suboptions = spec_meta.get("options")
+
+    if not isinstance(suboptions, dict) or not suboptions:
+        # No suboptions defined but default is a non-empty dict/list-of-dicts
+        if spec_type == "dict" and isinstance(default_value, dict) and default_value:
+            issues.append((
+                "warning",
+                spec_file,
+                var_prefix,
+                f"type is 'dict' with {len(default_value)} default keys but no suboptions defined",
+            ))
+        return
+
+    # Collect items to check based on type
     if spec_type == "dict" and isinstance(default_value, dict):
         items_to_check = [default_value]
     elif spec_type == "list" and spec_meta.get("elements") == "dict" and isinstance(default_value, list):
@@ -94,37 +119,35 @@ def check_suboptions(spec_meta, default_value, file_path, var_prefix, issues):
     for key in sorted(default_keys - suboption_keys):
         issues.append((
             "warning",
-            file_path,
+            defaults_file,
             f"{var_prefix}.{key}",
-            "present in default value but missing from suboptions",
+            "present in default value but not documented in suboptions",
         ))
 
-    # Check quality of documented suboptions
+    # Check suboption defaults against actual default values
     for key in sorted(default_keys & suboption_keys):
         sub_meta = suboptions[key]
         if not isinstance(sub_meta, dict):
             continue
 
-        if not sub_meta.get("description"):
-            issues.append((
-                "warning",
-                file_path,
-                f"{var_prefix}.{key}",
-                "missing 'description' in suboptions",
-            ))
+        # Compare suboption default with actual value in parent default
+        if "default" in sub_meta:
+            for item in items_to_check:
+                if key in item and sub_meta["default"] != item[key]:
+                    issues.append((
+                        "warning",
+                        defaults_file,
+                        f"{var_prefix}.{key}",
+                        f"suboption default mismatch: defaults={item[key]!r} vs argument_specs={sub_meta['default']!r}",
+                    ))
+                    break
 
-        if not sub_meta.get("type"):
-            issues.append((
-                "warning",
-                file_path,
-                f"{var_prefix}.{key}",
-                "missing 'type' in suboptions",
-            ))
-
-        # Recurse into nested suboptions
+        # Recurse deeper
         for item in items_to_check:
             if key in item:
-                check_suboptions(sub_meta, item[key], file_path, f"{var_prefix}.{key}", issues)
+                check_defaults_against_suboptions(
+                    sub_meta, item[key], spec_file, defaults_file, f"{var_prefix}.{key}", issues,
+                )
                 break
 
 
@@ -151,9 +174,11 @@ def check_role(role_path):
     defaults_vars = set(defaults.keys())
     argspec_vars = set(argspec_options.keys())
 
+    # 1. Variables in defaults but not in argument_specs
     for var in sorted(defaults_vars - argspec_vars):
         issues.append(("error", defaults_file, var, "defined in defaults/ but missing from argument_specs"))
 
+    # 2. Variables in argument_specs but not in defaults
     for var in sorted(argspec_vars - defaults_vars):
         issues.append((
             "warning",
@@ -162,15 +187,11 @@ def check_role(role_path):
             "in argument_specs but not in defaults/ (may be entry-point specific or required)",
         ))
 
+    # 3. Check common variables
     for var in sorted(defaults_vars & argspec_vars):
         meta = argspec_options.get(var, {})
 
-        if not meta.get("description"):
-            issues.append(("warning", argspec_file, var, "missing 'description' in argument_specs"))
-
-        if not meta.get("type"):
-            issues.append(("warning", argspec_file, var, "missing 'type' in argument_specs"))
-
+        # Top-level default value mismatch
         if "default" in meta:
             spec_default = meta["default"]
             actual_default = defaults.get(var)
@@ -182,8 +203,13 @@ def check_role(role_path):
                     f"default value mismatch: defaults={actual_default!r} vs argument_specs={spec_default!r}",
                 ))
 
-        # Recursively check suboptions against default value
-        check_suboptions(meta, defaults.get(var), argspec_file, var, issues)
+        # Check default value keys against suboptions
+        check_defaults_against_suboptions(
+            meta, defaults.get(var), argspec_file, defaults_file, var, issues,
+        )
+
+    # 4. Recursively check spec quality (description, type) for ALL options
+    check_spec_quality(argspec_options, argspec_file, "", issues)
 
     return issues
 
