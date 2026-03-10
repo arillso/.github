@@ -29,6 +29,36 @@ def is_jinja2_template(value):
     return False
 
 
+def parse_noqa_vars(path):
+    """Extract variable names marked with '# noqa: argument-specs' from a YAML file.
+
+    Scans for top-level keys followed by the noqa comment, e.g.:
+        my_var:  # noqa: argument-specs
+        my_var:
+          # noqa: argument-specs
+    """
+    suppressed = set()
+    if not path.exists():
+        return suppressed
+    with open(path) as f:
+        lines = f.readlines()
+    last_key = None
+    for line in lines:
+        stripped = line.rstrip()
+        # Match top-level key (no leading whitespace)
+        if stripped and not stripped[0].isspace() and ":" in stripped:
+            last_key = stripped.split(":")[0].strip()
+            # Inline noqa comment
+            if "# noqa: argument-specs" in stripped:
+                suppressed.add(last_key)
+        # Match indented noqa comment on the line after the key
+        elif last_key and stripped.strip() == "# noqa: argument-specs":
+            suppressed.add(last_key)
+        elif stripped and not stripped.strip().startswith("#"):
+            last_key = None
+    return suppressed
+
+
 def load_yaml(path):
     """Load a YAML file and return its contents."""
     if not path.exists():
@@ -186,9 +216,12 @@ def check_role(role_path):
     if not isinstance(defaults, dict):
         return issues
 
+    # Parse noqa suppressions from both files
+    noqa_vars = parse_noqa_vars(defaults_file) | parse_noqa_vars(argspec_file)
+
     argspec_options = extract_argspec_options(argument_specs)
-    defaults_vars = set(defaults.keys())
-    argspec_vars = set(argspec_options.keys())
+    defaults_vars = set(defaults.keys()) - noqa_vars
+    argspec_vars = set(argspec_options.keys()) - noqa_vars
 
     # 1. Variables in defaults but not in argument_specs
     for var in sorted(defaults_vars - argspec_vars):
