@@ -1,0 +1,16 @@
+---
+name: Check Argument Specs
+description: >-
+  Validate that Ansible role variables in defaults/main.yml
+  are properly documented in meta/argument_specs.yml
+
+runs:
+  using: composite
+  steps:
+    - name: Install PyYAML
+      shell: bash
+      run: pip install pyyaml
+
+    - name: Check argument specs
+      shell: bash
+      run: python ${{ github.action_path }}/check_argument_specs.py

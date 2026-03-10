@@ -6,6 +6,18 @@ This is a rolling release - changes are deployed continuously to `main`.
 
 ---
 
+## 2026-03-10
+
+### Added
+
+- **actions/check-argument-specs**: New composite action to validate Ansible
+  role variables in `defaults/main.yml` against `meta/argument_specs.yml`
+  with recursive suboptions checking and GitHub Actions annotations
+- **ci-ansible-collection.yml**: New `argument-specs` job using the composite
+  action (enabled by default via `enable_argument_specs_check` input)
+
+---
+
 ## 2026-03-09
 
 ### Changed

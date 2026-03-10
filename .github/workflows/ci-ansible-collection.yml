@@ -23,6 +23,11 @@ on:
         required: false
         type: string
         default: '["stable-2.18", "stable-2.19", "stable-2.20"]'
+      enable_argument_specs_check:
+        description: 'Enable argument specs validation for roles'
+        required: false
+        type: boolean
+        default: true
       enable_integration_tests:
         description: 'Enable integration tests'
         required: false
@@ -239,6 +244,29 @@ jobs:
       - name: Run integration tests
         run: ansible-test integration --docker --color
         working-directory: ansible_collections/${{ inputs.collection_namespace }}/${{ inputs.collection_name }}
+
+  argument-specs:
+    name: Argument Specs Check
+    runs-on: ubuntu-latest
+    if: ${{ inputs.enable_argument_specs_check }}
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+
+      - name: Checkout check-argument-specs action
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+        with:
+          repository: arillso/.github
+          path: .github-actions
+          sparse-checkout: actions/check-argument-specs
+
+      - name: Set up Python
+        uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6
+        with:
+          python-version: ${{ inputs.python_version }}
+
+      - name: Check argument specs
+        uses: ./.github-actions/actions/check-argument-specs
 
   build:
     name: Build Collection
