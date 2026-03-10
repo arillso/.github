@@ -87,14 +87,23 @@ def check_defaults_against_suboptions(spec_meta, default_value, spec_file, defau
     suboptions = spec_meta.get("options")
 
     if not isinstance(suboptions, dict) or not suboptions:
-        # No suboptions defined but default is a non-empty dict/list-of-dicts
+        # No suboptions defined but default is a non-empty dict
+        # Only warn if keys look like config parameters (all snake_case),
+        # not for lookup/mapping dicts (e.g. OS-family keys like Debian, RedHat)
         if spec_type == "dict" and isinstance(default_value, dict) and default_value:
-            issues.append((
-                "warning",
-                spec_file,
-                var_prefix,
-                f"type is 'dict' with {len(default_value)} default keys but no suboptions defined",
-            ))
+            keys = list(default_value.keys())
+            all_snake_case = all(
+                k == k.lower() and k.replace("_", "").replace(".", "").isalnum()
+                for k in keys
+                if k != "default"
+            )
+            if all_snake_case:
+                issues.append((
+                    "warning",
+                    spec_file,
+                    var_prefix,
+                    f"type is 'dict' with {len(default_value)} default keys but no suboptions defined",
+                ))
         return
 
     # Collect items to check based on type
