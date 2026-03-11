@@ -1,0 +1,80 @@
+---
+name: CI - Go
+
+on:
+  workflow_call:
+    inputs:
+      go_version:
+        description: 'Go version (or "file" to read from go.mod)'
+        required: false
+        type: string
+        default: 'file'
+      enable_test:
+        description: 'Enable Go tests'
+        required: false
+        type: boolean
+        default: true
+      enable_golangci_lint:
+        description: 'Enable golangci-lint'
+        required: false
+        type: boolean
+        default: true
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: Go Test
+    runs-on: ubuntu-latest
+    if: ${{ inputs.enable_test }}
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+
+      - name: Setup Go (from file)
+        if: ${{ inputs.go_version == 'file' }}
+        uses: actions/setup-go@4b73464bb391d4059bd26b0524d20df3927bd417 # v6
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - name: Setup Go (specific version)
+        if: ${{ inputs.go_version != 'file' }}
+        uses: actions/setup-go@4b73464bb391d4059bd26b0524d20df3927bd417 # v6
+        with:
+          go-version: ${{ inputs.go_version }}
+          cache: true
+
+      - name: Download dependencies
+        run: go mod download
+
+      - name: Run tests
+        run: go test -v -race -coverprofile=coverage.out -covermode=atomic ./...
+
+  golangci-lint:
+    name: Go Lint
+    runs-on: ubuntu-latest
+    if: ${{ inputs.enable_golangci_lint }}
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+
+      - name: Setup Go (from file)
+        if: ${{ inputs.go_version == 'file' }}
+        uses: actions/setup-go@4b73464bb391d4059bd26b0524d20df3927bd417 # v6
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - name: Setup Go (specific version)
+        if: ${{ inputs.go_version != 'file' }}
+        uses: actions/setup-go@4b73464bb391d4059bd26b0524d20df3927bd417 # v6
+        with:
+          go-version: ${{ inputs.go_version }}
+          cache: true
+
+      - name: Run golangci-lint
+        uses: golangci/golangci-lint-action@1e7e51e771db61008b38414a730f564565cf7c20 # v9
+        with:
+          version: latest

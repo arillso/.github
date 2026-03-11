@@ -22,7 +22,10 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  ci:
-    uses: arillso/.github/.github/workflows/ci-go-action.yml@main
+  go:
+    uses: arillso/.github/.github/workflows/ci-go.yml@main
+
+  lint:
+    uses: arillso/.github/.github/workflows/ci-lint.yml@main
     with:
       enable_shellcheck: true
