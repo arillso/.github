@@ -57,9 +57,6 @@ on:
       dockerhub_token:
         description: 'Docker Hub token (required if enable_dockerhub is true)'
         required: false
-      github_token:
-        description: 'GitHub token for GHCR access'
-        required: false
 
 permissions:
   contents: read
@@ -135,7 +132,7 @@ jobs:
         uses: snok/container-retention-policy@3b0972b2276b171b212f8c4efbca59ebba26eceb # v3.0.1
         with:
           account: ${{ inputs.account }}
-          token: ${{ secrets.github_token || secrets.GITHUB_TOKEN }}
+          token: ${{ secrets.GITHUB_TOKEN }}
           image-names: ${{ inputs.image_names }}
           cut-off: ${{ inputs.cut_off }}
           keep-n-most-recent: ${{ inputs.keep_n_most_recent }}
