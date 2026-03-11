@@ -6,15 +6,36 @@ This is a rolling release - changes are deployed continuously to `main`.
 
 ---
 
-## 2026-03-10
+## 2026-03-11
 
 ### Added
 
+- **ci-go.yml**: New dedicated Go CI workflow with `go test` and `golangci-lint`
 - **actions/check-argument-specs**: New composite action to validate Ansible
   role variables in `defaults/main.yml` against `meta/argument_specs.yml`
   with recursive suboptions checking and GitHub Actions annotations
 - **ci-ansible-collection.yml**: New `argument-specs` job using the composite
   action (enabled by default via `enable_argument_specs_check` input)
+- Support for `# noqa: argument-specs` comments to skip variables from checks
+
+### Changed
+
+- **ci-go-action.yml → ci-lint.yml**: Renamed and reduced to pure linting tools
+  (actionlint, shellcheck, yamllint); Go-specific jobs moved to `ci-go.yml`
+- **templates/workflows/ci.yml**: Updated to use `ci-go.yml` + `ci-lint.yml`
+  instead of `ci-go-action.yml`
+
+### Fixed
+
+- Skip default value comparison for Jinja2 template expressions
+- Improved dict heuristic to avoid false warnings on lookup/mapping dicts
+  (e.g. OS-family keys like Debian, RedHat)
+- Skip suboptions warning for lookup/mapping dicts
+- Recursive suboptions quality check now runs independent of default values
+
+### Chore
+
+- Added Python cache files (`__pycache__/`, `*.pyc`) to `.gitignore`
 
 ---
 
