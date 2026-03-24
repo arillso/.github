@@ -1,23 +1,21 @@
 {
-    "$schema": "https://docs.renovatebot.com/renovate-schema.json",
-    "extends": ["github>arillso/.github:renovate-base"],
-    "packageRules": [
-        {
-            "description": "Group GitHub Actions dependencies",
-            "matchManagers": ["github-actions"],
-            "groupName": "github-actions",
-            "automerge": true,
-            "platformAutomerge": true
-        },
-        {
-            "description": "Group Docker images",
-            "matchManagers": ["dockerfile"],
-            "groupName": "docker-images"
-        },
-        {
-            "description": "Group Go dependencies",
-            "matchManagers": ["gomod"],
-            "groupName": "golang-dependencies"
-        }
-    ]
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "description": "GitHub Actions Renovate configuration",
+  "extends": ["github>arillso/.github:renovate-base"],
+  "packageRules": [
+    {
+      "description": "Group Docker images",
+      "matchManagers": ["dockerfile"],
+      "groupName": "docker-images",
+      "semanticCommitType": "build",
+      "semanticCommitScope": "docker"
+    },
+    {
+      "description": "Group Go dependencies",
+      "matchManagers": ["gomod"],
+      "groupName": "golang-dependencies",
+      "semanticCommitType": "chore",
+      "semanticCommitScope": "deps"
+    }
+  ]
 }

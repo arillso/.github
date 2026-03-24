@@ -1,22 +1,14 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
   "description": "Base Renovate configuration for Arillso repositories",
-  "extends": [
-    "config:best-practices",
-    ":dependencyDashboard",
-    ":semanticCommitTypeAll(chore)",
-    "group:allNonMajor",
-    "schedule:weekdays"
-  ],
-  "schedule": ["before 6am on Monday"],
+  "extends": ["config:best-practices", ":dependencyDashboard", ":semanticCommitTypeAll(chore)"],
+  "schedule": ["before 6am"],
   "timezone": "Europe/Zurich",
   "labels": ["dependencies"],
-  "assignees": ["sbaerlocher"],
-  "reviewersFromCodeOwners": true,
   "assigneesFromCodeOwners": true,
+  "reviewersFromCodeOwners": true,
   "prConcurrentLimit": 5,
   "prHourlyLimit": 0,
-  "prCreation": "not-pending",
   "platformAutomerge": true,
   "automergeType": "pr",
   "automergeStrategy": "squash",
@@ -26,34 +18,36 @@
   "separateMajorMinor": true,
   "separateMultipleMajor": true,
   "rangeStrategy": "bump",
-  "stabilityDays": 3,
-  "internalChecksFilter": "strict",
-  "postUpdateOptions": ["gomodTidy"],
+  "minimumReleaseAge": "3 days",
+  "configMigration": true,
+  "postUpdateOptions": ["gomodTidy", "npmDedupe", "pnpmDedupe"],
   "commitMessageAction": "Update",
   "commitMessagePrefix": "chore(deps): ",
   "commitMessageTopic": "{{depName}}",
   "commitMessageExtra": "to {{#if isPinDigest}}{{{newDigestShort}}}{{else}}{{#if isMajor}}{{prettyNewMajor}}{{else}}{{#if isSingleVersion}}{{prettyNewVersion}}{{else}}{{#if newValue}}{{{newValue}}}{{else}}{{{newDigestShort}}}{{/if}}{{/if}}{{/if}}{{/if}}",
-  "dependencyDashboard": true,
   "dependencyDashboardTitle": "Dependency Dashboard",
   "dependencyDashboardLabels": ["dependencies", "renovate"],
   "dependencyDashboardFooter": "Managed by Renovate Bot - [Documentation](https://docs.renovatebot.com/)",
   "packageRules": [
     {
-      "description": "Automerge non-major updates",
+      "description": "Automerge all non-major updates",
       "matchUpdateTypes": ["minor", "patch", "pin", "digest"],
+      "groupName": "all non-major dependencies",
+      "groupSlug": "all-non-major",
       "automerge": true
     },
     {
-      "description": "Group all patch updates",
-      "matchUpdateTypes": ["patch"],
-      "groupName": "all patch dependencies",
-      "groupSlug": "all-patch"
+      "description": "Major updates require manual review",
+      "matchUpdateTypes": ["major"],
+      "automerge": false,
+      "labels": ["dependencies", "major-update"],
+      "prPriority": 10,
+      "minimumReleaseAge": "7 days"
     },
     {
-      "description": "Group all minor updates",
-      "matchUpdateTypes": ["minor"],
-      "groupName": "all minor dependencies",
-      "groupSlug": "all-minor"
+      "description": "Pre-release versions require manual review",
+      "matchCurrentVersion": "/^0\\./",
+      "automerge": false
     },
     {
       "description": "GitHub Actions - pin digests & automerge",
@@ -65,36 +59,13 @@
       "semanticCommitScope": "actions"
     },
     {
-      "description": "Reusable workflows & Renovate presets - use date tags, no digest pinning",
-      "matchManagers": ["github-actions"],
-      "matchPackageNames": ["arillso/.github"],
+      "description": "arillso/.github - date tags, no digest pinning, immediate merge",
+      "matchDepNames": ["arillso/.github"],
       "pinDigests": false,
       "versioning": "regex:^(?<major>\\d{4})-(?<minor>\\d{2})-(?<patch>\\d{2})$",
       "allowedVersions": "/^\\d{4}-\\d{2}-\\d{2}$/",
-      "minimumReleaseAge": "0 days",
-      "automerge": true,
-      "stabilityDays": 0
-    },
-    {
-      "description": "Major updates require manual approval",
-      "matchUpdateTypes": ["major"],
-      "automerge": false,
-      "dependencyDashboardApproval": true,
-      "labels": ["dependencies", "major-update"],
-      "prPriority": 10,
-      "stabilityDays": 7
-    },
-    {
-      "description": "Pre-release versions manual approval",
-      "matchCurrentVersion": "/^0\\./",
-      "automerge": false,
-      "dependencyDashboardApproval": true
-    },
-    {
-      "description": "Automerge arillso/.github Renovate preset updates",
-      "matchDepNames": ["arillso/.github"],
-      "automerge": true,
-      "stabilityDays": 0
+      "minimumReleaseAge": "1 day",
+      "automerge": true
     }
   ],
   "lockFileMaintenance": {
@@ -113,7 +84,14 @@
     {
       "customType": "regex",
       "description": "Update versions in comments (renovate: datasource=... depName=...)",
-      "fileMatch": ["\\.ya?ml$", "\\.json$", "\\.toml$", "Makefile$", "\\.mk$", "Dockerfile$"],
+      "managerFilePatterns": [
+        "/\\.ya?ml$/",
+        "/\\.json$/",
+        "/\\.toml$/",
+        "/Makefile$/",
+        "/\\.mk$/",
+        "/Dockerfile$/"
+      ],
       "matchStrings": [
         "#\\s*renovate:\\s*datasource=(?<datasource>[^\\s]+)\\s+depName=(?<depName>[^\\s]+)(\\s+versioning=(?<versioning>[^\\s]+))?(\\s+extractVersion=(?<extractVersion>[^\\s]+))?\\s*\\n[^:]*:\\s*['\"]?(?<currentValue>[^'\"\\s]+)['\"]?"
       ],
@@ -121,21 +99,13 @@
     },
     {
       "customType": "regex",
-      "description": "Update _VERSION variables in Makefiles",
-      "fileMatch": ["^Makefile$", "\\.mk$"],
-      "matchStrings": [
-        "(?<depName>[A-Z_]+)_VERSION\\s*[:?]?=\\s*(?<currentValue>[^\\s]+)"
-      ],
-      "datasourceTemplate": "github-releases",
-      "versioningTemplate": "semver"
-    },
-    {
-      "customType": "regex",
       "description": "Update pinned Renovate preset versions from arillso/.github",
-      "fileMatch": ["(^|/)renovate[^/]*\\.json$", "(^|/)\\.renovaterc\\.json$", "(^|/)\\.renovaterc$"],
-      "matchStrings": [
-        "github>arillso/\\.github[^\"]*#(?<currentValue>\\d{4}-\\d{2}-\\d{2})"
+      "managerFilePatterns": [
+        "/(^|/)renovate[^/]*\\.json$/",
+        "/(^|/)\\.renovaterc\\.json$/",
+        "/(^|/)\\.renovaterc$/"
       ],
+      "matchStrings": ["github>arillso/\\.github[^\"]*#(?<currentValue>\\d{4}-\\d{2}-\\d{2})"],
       "depNameTemplate": "arillso/.github",
       "datasourceTemplate": "github-tags",
       "versioningTemplate": "regex:^(?<major>\\d{4})-(?<minor>\\d{2})-(?<patch>\\d{2})$"

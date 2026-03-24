@@ -6,6 +6,42 @@ This is a rolling release - changes are deployed continuously to `main`.
 
 ---
 
+## 2026-03-24
+
+### Changed
+
+- **renovate-base.json**: Aligned base configuration with `sbaerlocher/.github`
+  - Migrated deprecated `stabilityDays` → `minimumReleaseAge`
+  - Migrated deprecated `fileMatch` → `managerFilePatterns` in all custom managers
+  - Simplified non-major updates into one group (`all-non-major`) instead of
+    separate patch and minor groups
+  - Changed schedule from `"before 6am on Monday"` to `"before 6am"` (daily)
+  - Removed `prCreation: "not-pending"` — PRs are now created regardless of CI status
+  - Removed `dependencyDashboardApproval` from major/pre-release rules — PRs are
+    created automatically, automerge remains disabled for manual review
+  - Added `configMigration: true` — Renovate auto-migrates deprecated config in
+    consumer repos
+  - Added `npmDedupe` and `pnpmDedupe` to `postUpdateOptions`
+  - Removed `"group:allNonMajor"` and `"schedule:weekdays"` from `extends`
+    (now configured explicitly)
+  - Removed redundant `dependencyDashboard: true` (set via `:dependencyDashboard`
+    in `extends`)
+- **renovate-go.json**: Aligned with base conventions
+  - Migrated deprecated `matchPackagePrefixes` → `matchPackageNames` with `/**` glob
+  - Migrated deprecated `matchPackagePatterns` → `matchPackageNames` with regex
+  - Migrated deprecated `excludePackagePrefixes` → negative `matchPackageNames`
+  - Migrated `stabilityDays` → `minimumReleaseAge`
+  - Migrated `fileMatch` → `managerFilePatterns` in all custom managers
+  - Removed redundant `:semanticCommitTypeAll(chore)` from `extends`
+  - Removed `dependencyDashboardApproval` (consistent with base)
+- **renovate-actions.json**: Removed conflicting `github-actions` package rule
+  (base already handles GitHub Actions grouping as `"GitHub Actions"` with digest
+  pinning); removed redundant `platformAutomerge: true` from package rule
+- **renovate-ansible.json**: Migrated `fileMatch` → `managerFilePatterns` in
+  custom manager and `ansible-galaxy` manager config
+
+---
+
 ## 2026-03-11
 
 ### Added

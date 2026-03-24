@@ -1,43 +1,44 @@
 {
-    "$schema": "https://docs.renovatebot.com/renovate-schema.json",
-    "extends": ["github>arillso/.github:renovate-base"],
-    "packageRules": [
-        {
-            "description": "Group Ansible Galaxy collections",
-            "matchManagers": ["ansible-galaxy"],
-            "groupName": "ansible-collections"
-        },
-        {
-            "description": "Group Ansible Galaxy roles",
-            "matchManagers": ["ansible-galaxy"],
-            "matchDepTypes": ["role"],
-            "groupName": "ansible-roles"
-        },
-        {
-            "description": "Group Python dependencies (ansible-core)",
-            "matchManagers": ["pip_requirements", "pip_setup"],
-            "groupName": "python-dependencies"
-        },
-        {
-            "description": "Update Ansible collections even with range constraints",
-            "matchManagers": ["ansible-galaxy"],
-            "rangeStrategy": "update-lockfile"
-        }
-    ],
-    "ansible-galaxy": {
-        "fileMatch": ["(^|/)requirements\\.ya?ml$", "(^|/)galaxy\\.ya?ml$"]
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "description": "Ansible Renovate configuration for Galaxy collections, roles, and Python dependencies",
+  "extends": ["github>arillso/.github:renovate-base"],
+  "packageRules": [
+    {
+      "description": "Group Ansible Galaxy collections",
+      "matchManagers": ["ansible-galaxy"],
+      "groupName": "ansible-collections"
     },
-    "customManagers": [
-        {
-            "customType": "regex",
-            "managerFilePatterns": [
-                "/^roles/.*/defaults/main\\.yml$/"
-            ],
-            "matchStrings": [
-                "#\\s*renovate:\\s*datasource=(?<datasource>\\S+)\\s+depName=(?<depName>\\S+)(?:\\s+extractVersion=(?<extractVersion>\\S+))?(?:\\s+versioning=(?<versioning>\\S+))?\\s*(?:\\r?\\n|\\r).*?:\\s*[\"']?(?<currentValue>[^\"'\\s]+)[\"']?\\s*(?:\\r?\\n|\\r|$)"
-            ],
-            "extractVersionTemplate": "{{#if extractVersion}}{{{extractVersion}}}{{else}}^(?<version>.*)${{/if}}",
-            "versioningTemplate": "{{#if versioning}}{{{versioning}}}{{else}}semver{{/if}}"
-        }
-    ]
+    {
+      "description": "Group Ansible Galaxy roles",
+      "matchManagers": ["ansible-galaxy"],
+      "matchDepTypes": ["role"],
+      "groupName": "ansible-roles"
+    },
+    {
+      "description": "Group Python dependencies (ansible-core)",
+      "matchManagers": ["pip_requirements", "pip_setup"],
+      "groupName": "python-dependencies"
+    },
+    {
+      "description": "Update Ansible collections even with range constraints",
+      "matchManagers": ["ansible-galaxy"],
+      "rangeStrategy": "update-lockfile"
+    }
+  ],
+  "ansible-galaxy": {
+    "managerFilePatterns": ["/(^|/)requirements\\.ya?ml$/", "/(^|/)galaxy\\.ya?ml$/"]
+  },
+  "customManagers": [
+    {
+      "customType": "regex",
+      "managerFilePatterns": [
+        "/^roles/.*/defaults/main\\.yml$/"
+      ],
+      "matchStrings": [
+        "#\\s*renovate:\\s*datasource=(?<datasource>\\S+)\\s+depName=(?<depName>\\S+)(?:\\s+extractVersion=(?<extractVersion>\\S+))?(?:\\s+versioning=(?<versioning>\\S+))?\\s*(?:\\r?\\n|\\r).*?:\\s*[\"']?(?<currentValue>[^\"'\\s]+)[\"']?\\s*(?:\\r?\\n|\\r|$)"
+      ],
+      "extractVersionTemplate": "{{#if extractVersion}}{{{extractVersion}}}{{else}}^(?<version>.*)${{/if}}",
+      "versioningTemplate": "{{#if versioning}}{{{versioning}}}{{else}}semver{{/if}}"
+    }
+  ]
 }
