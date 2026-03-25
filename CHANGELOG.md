@@ -6,6 +6,24 @@ This is a rolling release - changes are deployed continuously to `main`.
 
 ---
 
+## 2026-03-25
+
+### Changed
+
+- **ai-claude-review.yml**: Update `anthropics/claude-code-action` from `v1` to `v1.0.78`
+  - Model: `claude-opus-4-6`
+  - Max turns: `100`
+  - Allowed tools: `mcp__github_inline_comment__create_inline_comment`, `Task`, `Agent`,
+    `Read`, `Glob`, `Grep`, `Bash(gh pr ...)`, `Bash(gh issue ...)`, `Bash(gh search:*)`,
+    `Bash(git log:*)`
+- **ai-claude.yml**: Update `anthropics/claude-code-action` from `v1` to `v1.0.78`
+
+### Fixed
+
+- **ci-ansible-collection.yml**: Pin `aquasecurity/trivy-action` to SHA instead of `@master`
+
+---
+
 ## 2026-03-24
 
 ### Changed

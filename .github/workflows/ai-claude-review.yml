@@ -1,20 +1,31 @@
 name: AI - Code Review
 
 on:
+  pull_request:
+    types: [opened, ready_for_review, reopened]
   workflow_call:
     secrets:
       CLAUDE_CODE_OAUTH_TOKEN:
         required: true
+        # Note: for pull_request trigger, secrets.CLAUDE_CODE_OAUTH_TOKEN resolves
+        # directly from the repo's secrets context — no caller needed.
+
+concurrency:
+  group: claude-review-${{ github.event.pull_request.number || github.run_id }}
+  cancel-in-progress: true
 
 jobs:
   claude-review:
-    if: github.event.pull_request.user.login != 'renovate[bot]'
+    if: |
+      !github.event.pull_request.draft &&
+      github.event.pull_request.user.login != 'renovate[bot]' &&
+      github.event.pull_request.user.login != 'dependabot[bot]'
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 30
     permissions:
       contents: read
       pull-requests: write
-      issues: read
+      issues: read # required for gh issue view/list in claude_args
       id-token: write
 
     steps:
@@ -22,13 +33,16 @@ jobs:
         with:
           fetch-depth: 1
 
-      - uses: anthropics/claude-code-action@ff9acae5886d41a99ed4ec14b7dc147d55834722 # v1
+      - uses: anthropics/claude-code-action@0ee1beea589a67d33340072691a5d42abec7ae6b # v1.0.78
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          classify_inline_comments: "false"
           plugin_marketplaces: "https://github.com/anthropics/claude-code.git"
           plugins: "code-review@claude-code-plugins"
           claude_args: |
-            --allowedTools "mcp__github_inline_comment__create_inline_comment,Bash(gh pr comment:*),Bash(gh pr diff:*),Bash(gh pr view:*)"
+            --max-turns 100
+            --model claude-opus-4-6
+            --allowedTools "mcp__github_inline_comment__create_inline_comment,Task,Agent,Read,Glob,Grep,Bash(gh pr comment:*),Bash(gh pr diff:*),Bash(gh pr view:*),Bash(gh pr list:*),Bash(gh pr checks:*),Bash(gh issue view:*),Bash(gh issue list:*),Bash(gh search:*),Bash(git log:*)"
           prompt: |
             REPO: ${{ github.repository }}
             PR NUMBER: ${{ github.event.pull_request.number }}
