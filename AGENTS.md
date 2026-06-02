@@ -95,6 +95,7 @@ This repository provides shared Renovate presets for consumer repositories:
 | Workflow | File | Description |
 |----------|------|-------------|
 | Ansible Collection CI | [ci-ansible-collection.yml](./.github/workflows/ci-ansible-collection.yml) | Linting, security scan, sanity/unit/integration tests, build |
+| Ansible Molecule CI | [ci-ansible-molecule.yml](./.github/workflows/ci-ansible-molecule.yml) | Auto-discovered Molecule scenarios under `extensions/molecule/`, docker driver |
 | Go CI | [ci-go.yml](./.github/workflows/ci-go.yml) | golangci-lint, gofmt, go vet, go test |
 | Lint | [ci-lint.yml](./.github/workflows/ci-lint.yml) | MegaLinter aggregator |
 
