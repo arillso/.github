@@ -1,0 +1,389 @@
+---
+name: Security - IaC Configuration
+
+on:
+  workflow_call:
+    inputs:
+      # Scan targets
+      scan-terraform:
+        type: boolean
+        default: false
+        description: 'Scan Terraform files'
+      scan-kubernetes:
+        type: boolean
+        default: false
+        description: 'Scan Kubernetes manifests'
+      scan-ansible:
+        type: boolean
+        default: false
+        description: 'Scan Ansible playbooks'
+      # Paths
+      terraform-path:
+        type: string
+        default: '.'
+        description: 'Path to Terraform files'
+      kubernetes-path:
+        type: string
+        default: '.'
+        description: 'Path to Kubernetes manifests'
+      ansible-path:
+        type: string
+        default: '.'
+        description: 'Path to Ansible playbooks'
+      # Severity
+      severity-threshold:
+        type: string
+        default: 'MEDIUM'
+        description: 'Minimum severity (LOW, MEDIUM, HIGH, CRITICAL)'
+      fail-on-findings:
+        type: boolean
+        default: false
+        description: 'Fail workflow on security findings'
+      # SARIF upload
+      enable-sarif:
+        type: boolean
+        default: true
+        description: 'Upload SARIF results to GitHub Security'
+      cancel-in-progress:
+        type: boolean
+        required: false
+        default: true
+        description: |
+          Whether to cancel in-progress runs in the same concurrency group.
+          Default matches this workflow's intended semantics; override only
+          for matrix or fan-out invocations that need different semantics
+          than the single-call default.
+      concurrency-suffix:
+        type: string
+        required: false
+        default: ''
+        description: |
+          Optional suffix appended to the concurrency group as `-<suffix>`.
+          Empty default preserves the original group name; set to separate
+          parallel invocations of this reusable from the same caller (e.g.
+          per-matrix-leg or per-mode).
+
+permissions:
+  contents: read
+  security-events: write
+
+concurrency:
+  group: >-
+    ${{ github.workflow }}-${{ github.ref }}${{
+      inputs.concurrency-suffix != '' && format('-{0}', inputs.concurrency-suffix) || ''
+    }}
+  cancel-in-progress: ${{ inputs.cancel-in-progress }}
+
+jobs:
+  trivy-config-scan:
+    name: Trivy Config Scan
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+
+      - name: Run Trivy config scan
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        with:
+          scan-type: 'config'
+          scan-ref: '.'
+          severity: ${{ inputs.severity-threshold }},HIGH,CRITICAL
+          format: 'sarif'
+          output: 'trivy-config-results.sarif'
+          exit-code: ${{ inputs.fail-on-findings && '1' || '0' }}
+
+      - name: Upload Trivy results to GitHub Security
+        if: |
+          inputs.enable-sarif && always() &&
+          github.event.repository.visibility == 'public'
+        uses: github/codeql-action/upload-sarif@9e0d7b8d25671d64c341c19c0152d693099fb5ba # v4.35.5
+        with:
+          sarif_file: 'trivy-config-results.sarif'
+          category: 'trivy-config'
+        continue-on-error: true
+
+      - name: Skip SARIF upload for private repo
+        if: |
+          inputs.enable-sarif && always() &&
+          github.event.repository.visibility != 'public'
+        run: |
+          echo "::notice::Skipping SARIF upload - Code Scanning requires GitHub Advanced Security for private repos"
+          echo "::notice::Security results are available as workflow artifacts"
+
+      - name: Generate Trivy report
+        if: always()
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        with:
+          scan-type: 'config'
+          scan-ref: '.'
+          severity: ${{ inputs.severity-threshold }},HIGH,CRITICAL
+          format: 'table'
+          output: 'trivy-config-report.txt'
+          exit-code: '0'
+
+      - name: Upload Trivy artifacts
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: trivy-config-results
+          path: |
+            trivy-config-results.sarif
+            trivy-config-report.txt
+          retention-days: 30
+
+  terraform-security:
+    name: Terraform Security
+    if: inputs.scan-terraform
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+
+      - name: Run Trivy (Terraform Security)
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        with:
+          scan-type: 'config'
+          scan-ref: ${{ inputs.terraform-path }}
+          format: 'sarif'
+          output: 'trivy-results.sarif'
+          scanners: 'config'
+          exit-code: ${{ inputs.fail-on-findings && '1' || '0' }}
+          severity: ${{ inputs.severity-threshold }}
+
+      - name: Check if SARIF file exists
+        id: sarif_check
+        if: always()
+        run: |
+          if [ -f "trivy-results.sarif" ]; then
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+            echo "::warning::Trivy did not generate a SARIF file (no findings or execution issue)"
+          fi
+
+      - name: Upload Trivy results
+        if: |
+          inputs.enable-sarif && always() &&
+          steps.sarif_check.outputs.exists == 'true' &&
+          github.event.repository.visibility == 'public'
+        uses: github/codeql-action/upload-sarif@9e0d7b8d25671d64c341c19c0152d693099fb5ba # v4.35.5
+        with:
+          sarif_file: 'trivy-results.sarif'
+          category: 'trivy-terraform'
+        continue-on-error: true
+
+      - name: Skip SARIF upload for private repo
+        if: |
+          inputs.enable-sarif && always() &&
+          steps.sarif_check.outputs.exists == 'true' &&
+          github.event.repository.visibility != 'public'
+        run: |
+          echo "::notice::Skipping SARIF upload - Code Scanning requires GitHub Advanced Security for private repos"
+          echo "::notice::Security results are available as workflow artifacts"
+
+      - name: Upload Trivy artifacts
+        if: always() && steps.sarif_check.outputs.exists == 'true'
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: trivy-terraform-results
+          path: trivy-results.sarif
+          retention-days: 30
+
+      - name: Custom Terraform validators
+        working-directory: ${{ inputs.terraform-path }}
+        run: |
+          echo "Running custom Terraform validators..."
+
+          # Check for overly permissive CIDR blocks
+          echo "Checking for 0.0.0.0/0 CIDR blocks..."
+          if grep -r "0\.0\.0\.0/0" --include="*.tf" .; then
+            echo "::warning::Found overly permissive CIDR block 0.0.0.0/0"
+          fi
+
+          # Check for hardcoded IPs
+          echo "Checking for hardcoded IP addresses..."
+          grep -rE '\b([0-9]{1,3}\.){3}[0-9]{1,3}\b' --include="*.tf" . \
+            | grep -v "0.0.0.0" \
+            | grep -v "127.0.0.1" \
+            | grep -v "variable" \
+            | grep -v "data\." \
+            | grep -v "local\." \
+            | tee hardcoded-ips.txt || true
+
+          if [ -s hardcoded-ips.txt ]; then
+            echo "::warning::Found hardcoded IP addresses in Terraform files"
+          fi
+
+  kubernetes-security:
+    name: Scan Kubernetes
+    if: inputs.scan-kubernetes
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+
+      - name: Find Kubernetes manifests
+        id: find-manifests
+        working-directory: ${{ inputs.kubernetes-path }}
+        run: |
+          echo "Searching for Kubernetes manifests..."
+          MANIFESTS=$(find . -type f \( -name "*.yaml" -o -name "*.yml" \) -path "*/templates/*" 2>/dev/null || true)
+
+          if [ -z "$MANIFESTS" ]; then
+            echo "No Kubernetes manifests found in templates/"
+            echo "found=false" >> $GITHUB_OUTPUT
+          else
+            echo "Found manifests:"
+            echo "$MANIFESTS"
+            echo "found=true" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Run Kubesec
+        if: steps.find-manifests.outputs.found == 'true'
+        working-directory: ${{ inputs.kubernetes-path }}
+        env:
+          # renovate: datasource=docker depName=kubesec/kubesec
+          KUBESEC_IMAGE_VERSION: 'v2.14.2'
+        run: |
+          # Match the same scope the gating step established (find-manifests above):
+          # only files under */templates/*. This avoids feeding kubesec non-manifest
+          # YAML like Chart.yaml, values.yaml, kustomization.yaml or CI configs.
+          mapfile -t manifests < <(
+            find . -type f \( -name '*.yaml' -o -name '*.yml' \) -path '*/templates/*'
+          )
+          if [ ${#manifests[@]} -eq 0 ]; then
+            echo "::notice::No Kubernetes manifests found under */templates/*"
+            echo "[]" > kubesec-results.json
+            exit 0
+          fi
+          docker run --rm -v "$(pwd):/workspace" -w /workspace \
+            "kubesec/kubesec:${KUBESEC_IMAGE_VERSION}" scan "${manifests[@]}" \
+            | tee kubesec-results.json
+
+          # Check for critical issues
+          CRITICAL=$(jq '[.[] | select(.scoring.critical > 0)] | length' kubesec-results.json 2>/dev/null || echo "0")
+
+          if [ "$CRITICAL" -gt 0 ]; then
+            echo "::warning::Found $CRITICAL Kubernetes manifests with critical security issues"
+          fi
+
+      - name: Check for hardcoded credentials
+        if: steps.find-manifests.outputs.found == 'true'
+        working-directory: ${{ inputs.kubernetes-path }}
+        run: |
+          echo "Checking for hardcoded credentials in Kubernetes manifests..."
+
+          # Skip External Secrets Operator manifests
+          CREDENTIAL_PATTERNS="password:|apiKey:|token:|secret:"
+
+          grep -rn "$CREDENTIAL_PATTERNS" --include="*.yaml" --include="*.yml" . \
+            | grep -v "kind: ExternalSecret" \
+            | grep -v "kind: SecretStore" \
+            | grep -v "kind: ClusterSecretStore" \
+            | tee credential-check.txt || true
+
+          if [ -s credential-check.txt ]; then
+            echo "::warning::Potential hardcoded credentials found in Kubernetes manifests"
+          else
+            echo "::notice::No hardcoded credentials detected"
+          fi
+
+      - name: Upload Kubernetes scan results
+        if: steps.find-manifests.outputs.found == 'true' && always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: kubernetes-security-results
+          path: |
+            ${{ inputs.kubernetes-path }}/kubesec-results.json
+            ${{ inputs.kubernetes-path }}/credential-check.txt
+          retention-days: 30
+          if-no-files-found: ignore
+
+  ansible-security:
+    name: Scan Ansible
+    if: inputs.scan-ansible
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+
+      - name: Setup Python
+        uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0
+        with:
+          python-version: '3.12'
+
+      - name: Install Ansible and ansible-lint
+        env:
+          # renovate: datasource=pypi depName=ansible
+          ANSIBLE_VERSION: '13.7.0'
+          # renovate: datasource=pypi depName=ansible-lint
+          ANSIBLE_LINT_VERSION: '26.4.0'
+          # renovate: datasource=pypi depName=yamllint
+          YAMLLINT_VERSION: '1.38.0'
+        run: |
+          pip install \
+            "ansible==${ANSIBLE_VERSION}" \
+            "ansible-lint==${ANSIBLE_LINT_VERSION}" \
+            "yamllint==${YAMLLINT_VERSION}"
+
+      - name: Run ansible-lint
+        working-directory: ${{ inputs.ansible-path }}
+        run: |
+          echo "Running ansible-lint..."
+          ansible-lint -f pep8 . | tee ansible-lint-results.txt || true
+
+      - name: Run yamllint
+        working-directory: ${{ inputs.ansible-path }}
+        run: |
+          echo "Running yamllint on playbooks..."
+          yamllint -f parsable . | tee yamllint-results.txt || true
+
+      - name: Upload Ansible scan results
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: ansible-security-results
+          path: |
+            ${{ inputs.ansible-path }}/ansible-lint-results.txt
+            ${{ inputs.ansible-path }}/yamllint-results.txt
+          retention-days: 30
+          if-no-files-found: ignore
+
+  security-report:
+    name: Create Report
+    runs-on: ubuntu-latest
+    needs: [trivy-config-scan, terraform-security, kubernetes-security, ansible-security]
+    if: always() && !cancelled()
+    steps:
+      - name: Generate Security Report
+        run: |
+          TIMESTAMP=$(date -u '+%Y-%m-%d %H:%M:%S UTC')
+
+          cat >> "$GITHUB_STEP_SUMMARY" << EOF
+          # Security — IaC Configuration
+
+          **Timestamp:** $TIMESTAMP
+          **Severity Threshold:** ${{ inputs.severity-threshold }}+
+          **Repository:** ${{ github.repository }} @ ${{ github.ref_name }}
+
+          | Scan | Enabled | Status |
+          | --- | --- | --- |
+          | Trivy Config | yes | ${{ needs.trivy-config-scan.result }} |
+          | Terraform | ${{ inputs.scan-terraform && 'yes' || 'no' }} | ${{ needs.terraform-security.result }} |
+          | Kubernetes | ${{ inputs.scan-kubernetes && 'yes' || 'no' }} | ${{ needs.kubernetes-security.result }} |
+          | Ansible | ${{ inputs.scan-ansible && 'yes' || 'no' }} | ${{ needs.ansible-security.result }} |
+
+          > Secret detection is handled separately by \`security-secrets.yml\`
+          EOF

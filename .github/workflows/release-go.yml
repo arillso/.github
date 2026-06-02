@@ -1,0 +1,115 @@
+---
+name: Release - Go (GoReleaser)
+
+on:
+  workflow_call:
+    inputs:
+      go-version:
+        type: string
+        required: false
+        default: '1.25'
+        description: 'Go version to use'
+      goreleaser-version:
+        type: string
+        required: false
+        default: '~> v2'
+        description: 'GoReleaser version'
+      goreleaser-args:
+        type: string
+        required: false
+        default: 'release --clean'
+        description: 'GoReleaser arguments'
+      working-directory:
+        type: string
+        required: false
+        default: '.'
+        description: 'Working directory'
+      pre-build-commands:
+        type: string
+        required: false
+        default: ''
+        description: 'Commands to run before GoReleaser (e.g. code generation)'
+      extra-env:
+        type: string
+        required: false
+        default: ''
+        description: 'Additional environment variables (multiline, KEY=VALUE format)'
+      cancel-in-progress:
+        type: boolean
+        required: false
+        default: false
+        description: |
+          Whether to cancel in-progress runs in the same concurrency group.
+          Default matches this workflow's intended semantics; override only
+          for matrix or fan-out invocations that need different semantics
+          than the single-call default.
+      concurrency-suffix:
+        type: string
+        required: false
+        default: ''
+        description: |
+          Optional suffix appended to the concurrency group as `-<suffix>`.
+          Empty default preserves the original group name; set to separate
+          parallel invocations of this reusable from the same caller (e.g.
+          per-matrix-leg or per-mode).
+
+permissions:
+  contents: write
+  packages: write
+
+concurrency:
+  group: >-
+    ${{ github.workflow }}-${{ github.ref }}${{
+      inputs.concurrency-suffix != '' && format('-{0}', inputs.concurrency-suffix) || ''
+    }}
+  cancel-in-progress: ${{ inputs.cancel-in-progress }}
+
+jobs:
+  goreleaser:
+    name: Build & Release
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+
+      - name: Set up Go
+        uses: actions/setup-go@4a3601121dd01d1626a1e23e37211e3254c1c06c # v6.4.0
+        with:
+          go-version: ${{ inputs.go-version }}
+          cache: true
+
+      - name: Cache Go build artifacts
+        uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
+        with:
+          path: ~/.cache/go-build
+          key: ${{ runner.os }}-go-build-${{ hashFiles('**/go.sum') }}
+          restore-keys: |
+            ${{ runner.os }}-go-build-
+
+      - name: Run pre-build commands
+        if: inputs.pre-build-commands != ''
+        run: ${{ inputs.pre-build-commands }}
+
+      - name: Parse extra environment variables
+        if: inputs.extra-env != ''
+        env:
+          EXTRA_ENV: ${{ inputs.extra-env }}
+        run: |
+          echo "$EXTRA_ENV" >> "$GITHUB_ENV"
+
+      - name: Create release with GoReleaser
+        uses: goreleaser/goreleaser-action@5daf1e915a5f0af01ddbcd89a43b8061ff4f1a89 # v7.2.2
+        with:
+          distribution: goreleaser
+          version: ${{ inputs.goreleaser-version }}
+          args: ${{ inputs.goreleaser-args }}
+          workdir: ${{ inputs.working-directory }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          GITHUB_REPOSITORY_OWNER: ${{ github.repository_owner }}
+        continue-on-error: false

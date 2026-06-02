@@ -1,0 +1,221 @@
+---
+name: Security - Code Analysis (CodeQL)
+
+on:
+  workflow_call:
+    inputs:
+      languages:
+        type: string
+        default: '["javascript-typescript"]'
+        description: 'Languages to analyze (JSON array: javascript-typescript, go, python, java, etc.)'
+      queries:
+        type: string
+        default: 'security-extended,security-and-quality'
+        description: 'Query suites to run'
+      node-version-file:
+        type: string
+        default: '.nvmrc'
+        description: 'Node version file (for JS/TS projects)'
+      go-version:
+        type: string
+        default: '1.25'
+        description: 'Go version (for Go projects)'
+      python-version:
+        type: string
+        default: '3.12'
+        description: 'Python version (for Python projects)'
+      package-manager:
+        type: string
+        default: ''
+        description: 'Package manager override (npm, pnpm, yarn). Auto-detected from lock files if empty.'
+      build-command:
+        type: string
+        default: ''
+        description: 'Custom build command (optional, autobuild if empty)'
+      paths-ignore:
+        type: string
+        default: 'node_modules,dist,coverage,**/*.spec.ts,**/*.test.ts'
+        description: 'Comma-separated list of paths to ignore'
+      enable-sarif-upload:
+        type: boolean
+        default: true
+        description: 'Upload SARIF results to GitHub Security tab (requires public repo or GHAS)'
+      cancel-in-progress:
+        type: boolean
+        required: false
+        default: true
+        description: |
+          Whether to cancel in-progress runs in the same concurrency group.
+          Default matches this workflow's intended semantics; override only
+          for matrix or fan-out invocations that need different semantics
+          than the single-call default.
+      concurrency-suffix:
+        type: string
+        required: false
+        default: ''
+        description: |
+          Optional suffix appended to the concurrency group as `-<suffix>`.
+          Empty default preserves the original group name; set to separate
+          parallel invocations of this reusable from the same caller (e.g.
+          per-matrix-leg or per-mode).
+
+permissions:
+  actions: read
+  contents: read
+  security-events: write
+
+concurrency:
+  group: >-
+    ${{ github.workflow }}-${{ github.ref }}${{
+      inputs.concurrency-suffix != '' && format('-{0}', inputs.concurrency-suffix) || ''
+    }}
+  cancel-in-progress: ${{ inputs.cancel-in-progress }}
+
+jobs:
+  analyze:
+    name: Analyze Code (${{ matrix.language }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        language: ${{ fromJSON(inputs.languages) }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+
+      - name: Prepare CodeQL config
+        id: codeql-config
+        run: |
+          {
+            echo "yaml<<CODEQL_CONFIG_EOF"
+            echo "paths-ignore:"
+            IFS=',' read -ra PATHS <<< "${{ inputs.paths-ignore }}"
+            for path in "${PATHS[@]}"; do
+              echo "  - '$path'"
+            done
+            echo "CODEQL_CONFIG_EOF"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@9e0d7b8d25671d64c341c19c0152d693099fb5ba # v4.35.5
+        with:
+          languages: ${{ matrix.language }}
+          queries: ${{ inputs.queries }}
+          config: ${{ steps.codeql-config.outputs.yaml }}
+
+      # Detect package manager (explicit input takes precedence over lock file detection)
+      - name: Detect package manager
+        if: matrix.language == 'javascript-typescript'
+        id: detect-pm
+        run: |
+          if [ -n "${{ inputs.package-manager }}" ]; then
+            echo "manager=${{ inputs.package-manager }}" >> "$GITHUB_OUTPUT"
+          elif [ -f "pnpm-lock.yaml" ]; then
+            echo "manager=pnpm" >> "$GITHUB_OUTPUT"
+          elif [ -f "yarn.lock" ]; then
+            echo "manager=yarn" >> "$GITHUB_OUTPUT"
+          else
+            echo "manager=npm" >> "$GITHUB_OUTPUT"
+          fi
+
+      # Setup language-specific environments
+      - name: Install pnpm
+        if: matrix.language == 'javascript-typescript' && steps.detect-pm.outputs.manager == 'pnpm'
+        uses: pnpm/action-setup@0e279bb959325dab635dd2c09392533439d90093 # v6.0.8
+
+      - name: Setup Node.js
+        if: matrix.language == 'javascript-typescript'
+        uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
+        with:
+          node-version-file: ${{ inputs.node-version-file }}
+          cache: ${{ steps.detect-pm.outputs.manager }}
+
+      - name: Setup Go
+        if: matrix.language == 'go'
+        uses: actions/setup-go@4a3601121dd01d1626a1e23e37211e3254c1c06c # v6.4.0
+        with:
+          go-version: ${{ inputs.go-version }}
+          cache: true
+
+      - name: Setup Python
+        if: matrix.language == 'python'
+        uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0
+        with:
+          python-version: ${{ inputs.python-version }}
+          cache: 'pip'
+
+      # Build steps - JavaScript/TypeScript
+      - name: Install dependencies (npm)
+        if: matrix.language == 'javascript-typescript' && inputs.build-command == '' && steps.detect-pm.outputs.manager == 'npm'
+        run: npm ci --prefer-offline --no-audit
+
+      - name: Install dependencies (pnpm)
+        if: matrix.language == 'javascript-typescript' && inputs.build-command == '' && steps.detect-pm.outputs.manager == 'pnpm'
+        run: pnpm install --frozen-lockfile
+
+      - name: Install dependencies (yarn)
+        if: matrix.language == 'javascript-typescript' && inputs.build-command == '' && steps.detect-pm.outputs.manager == 'yarn'
+        run: yarn install --frozen-lockfile
+
+      - name: Build project (JavaScript/TypeScript)
+        if: matrix.language == 'javascript-typescript' && inputs.build-command == ''
+        run: ${{ steps.detect-pm.outputs.manager }} run build
+
+      # Build steps - Python
+      - name: Install dependencies (Python)
+        if: matrix.language == 'python' && inputs.build-command == ''
+        run: |
+          if [ -f requirements.txt ]; then
+            pip install -r requirements.txt
+          fi
+
+      - name: Custom build command
+        if: inputs.build-command != ''
+        run: ${{ inputs.build-command }}
+
+      - name: Autobuild
+        if: inputs.build-command == '' && matrix.language != 'javascript-typescript' && matrix.language != 'python'
+        uses: github/codeql-action/autobuild@9e0d7b8d25671d64c341c19c0152d693099fb5ba # v4.35.5
+
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@9e0d7b8d25671d64c341c19c0152d693099fb5ba # v4.35.5
+        with:
+          category: '/language:${{ matrix.language }}'
+          upload: ${{ inputs.enable-sarif-upload && 'always' || 'never' }}
+          output: codeql-results
+
+      - name: Upload SARIF as artifact
+        if: ${{ !inputs.enable-sarif-upload }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: codeql-sarif-${{ matrix.language }}
+          path: codeql-results/*.sarif
+          retention-days: 30
+
+      - name: Generate Summary
+        if: always()
+        run: |
+          TIMESTAMP=$(date -u '+%Y-%m-%d %H:%M:%S UTC')
+
+          if [ "${{ inputs.enable-sarif-upload }}" = "true" ]; then
+            RESULTS_INFO="Results available in the GitHub Security tab"
+          else
+            RESULTS_INFO="Results uploaded as workflow artifact (SARIF)"
+          fi
+
+          cat >> "$GITHUB_STEP_SUMMARY" << EOF
+          # Security — Code Analysis (SAST)
+
+          **Language:** ${{ matrix.language }}
+          **Status:** ${{ job.status }}
+          **Timestamp:** $TIMESTAMP
+
+          **Query Suite:** ${{ inputs.queries }}
+          **Package Manager:** ${{ steps.detect-pm.outputs.manager || 'N/A' }}
+          **Paths Ignored:** ${{ inputs.paths-ignore }}
+          **Results:** ${RESULTS_INFO}
+          EOF

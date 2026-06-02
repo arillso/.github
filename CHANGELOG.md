@@ -6,6 +6,74 @@ This is a rolling release - changes are deployed continuously to `main`.
 
 ---
 
+## 2026-06-02
+
+### Added
+
+- **ci-ansible-molecule.yml**: New reusable workflow that runs Molecule
+  scenarios for Ansible collections. Auto-discovers scenarios under
+  `extensions/molecule/<scenario>/` (subdirectories starting with `.` are
+  skipped, so the `.config` shared-helpers convention is respected).
+  Inputs: `collection_namespace` (default `arillso`), `collection_name`,
+  optional `scenarios` JSON array, `scenarios_root`, `python_version`,
+  `runs_on`, plus the standard `cancel-in-progress` and
+  `concurrency-suffix` inputs. Driver is docker.
+- **release-go.yml**: GoReleaser-based binary release workflow with
+  multi-arch artifact handling and optional pre-build commands.
+- **security-code.yml**: Multi-language CodeQL (JavaScript/TypeScript,
+  Go, Python, Java) with package-manager auto-detect from lock files.
+  Supersedes `security-codeql.yml` for new repos without deprecating it.
+- **security-config.yml**: Trivy IaC config scan with opt-in
+  Terraform, Kubernetes and Ansible security passes (Kubesec, Trivy,
+  `ansible-lint`).
+- **security-sbom.yml**: CycloneDX/SPDX SBOM generation for container
+  images, filesystem paths and Go binaries (via `cyclonedx-gomod`).
+
+### Changed
+
+- **ai-claude-review.yml**: Reworked into a two-mode follow-up flow.
+  - Trigger extended with `synchronize` so the review re-runs on every
+    PR push, not only on `opened`/`reopened`/`ready_for_review`.
+  - Fork-PR guard added (`head.repo.full_name == github.repository`).
+    `pull_request` from forks runs without secrets and would otherwise
+    look broken; the job now skips cleanly.
+  - Mode is determined in shell from the GitHub Reviews API:
+    - `first` mode (no prior bot review on this PR): runs
+      `/code-review --comment` with **Claude Opus 4.8** and 100 turns,
+      then submits `--approve` or `--request-changes`.
+    - `followup` mode (prior bot review exists): does **not** re-run
+      `/code-review`. Fetches the diff since `last-review-sha`, replies
+      to its own prior inline comments via the GitHub API
+      (resolved/still open), adds new inline comments only for the
+      delta, and resolves review threads via GraphQL on approve.
+      Uses **Claude Sonnet 4.6** with 40 turns to keep follow-up cost
+      down.
+  - Bot login detected dynamically by matching `claude` in `user.login`
+    of prior bot reviews and comments, falling back to `claude[bot]`.
+  - `anthropics/claude-code-action` bumped to `v1` (SHA `787c5a0`).
+    `allowedTools` expanded for `gh pr review:*`,
+    `gh api repos/*/compare/*`, `gh api graphql:*`, and the
+    comments/replies endpoints needed for the follow-up flow.
+  - New `cancel-in-progress` and `concurrency-suffix` inputs.
+  - Top-level `permissions: contents: read`.
+  - `persist-credentials: false` on `actions/checkout`.
+- **ai-claude.yml**: New `cancel-in-progress` and `concurrency-suffix`
+  inputs; top-level `permissions: contents: read`;
+  `persist-credentials: false` on `actions/checkout`;
+  `anthropics/claude-code-action` bumped to `v1.0.127`.
+
+### Migration notes
+
+The `ai-claude-review.yml` change is **behaviour-breaking** for current
+consumers (`arillso/ansible.agent`, `arillso/ansible.container`,
+`arillso/ansible.system`): every PR push now triggers a review
+iteration instead of only the open/reopen events. Token cost is
+mitigated by using Sonnet for follow-ups and reading only the delta
+diff. Consumers that want the previous cadence can pin to the
+`2026-03-25` ref instead of `main`.
+
+---
+
 ## 2026-03-25
 
 ### Changed
