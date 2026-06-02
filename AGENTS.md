@@ -95,13 +95,17 @@ This repository provides shared Renovate presets for consumer repositories:
 | Workflow | File | Description |
 |----------|------|-------------|
 | Ansible Collection CI | [ci-ansible-collection.yml](./.github/workflows/ci-ansible-collection.yml) | Linting, security scan, sanity/unit/integration tests, build |
-| Go & Actions CI | [ci-go-action.yml](./.github/workflows/ci-go-action.yml) | golangci-lint, actionlint, shellcheck, yamllint |
+| Go CI | [ci-go.yml](./.github/workflows/ci-go.yml) | golangci-lint, gofmt, go vet, go test |
+| Lint | [ci-lint.yml](./.github/workflows/ci-lint.yml) | MegaLinter aggregator |
 
 ### Security
 
 | Workflow | File | Description |
 |----------|------|-------------|
-| CodeQL Analysis | [security-codeql.yml](./.github/workflows/security-codeql.yml) | Static code analysis (Go) |
+| Code Analysis (CodeQL) | [security-code.yml](./.github/workflows/security-code.yml) | Multi-language CodeQL (JS/TS, Go, Python, Java) with package-manager auto-detect |
+| CodeQL Analysis (Go) | [security-codeql.yml](./.github/workflows/security-codeql.yml) | Legacy Go-only CodeQL; prefer security-code.yml for new repos |
+| IaC Config Scanning | [security-config.yml](./.github/workflows/security-config.yml) | Trivy config + opt-in Terraform/Kubernetes/Ansible security scans |
+| SBOM Generation | [security-sbom.yml](./.github/workflows/security-sbom.yml) | CycloneDX/SPDX SBOMs for containers, filesystems, Go binaries |
 | Trivy Scanning | [security-trivy.yml](./.github/workflows/security-trivy.yml) | Filesystem & container vulnerability scanning |
 | Dependency Audit | [security-deps.yml](./.github/workflows/security-deps.yml) | govulncheck, license compliance, dependency review |
 | Secret Detection | [security-secrets.yml](./.github/workflows/security-secrets.yml) | Gitleaks, TruffleHog, custom pattern detection |
@@ -111,6 +115,7 @@ This repository provides shared Renovate presets for consumer repositories:
 | Workflow | File | Description |
 |----------|------|-------------|
 | Publish Ansible Collection | [release-ansible-collection.yml](./.github/workflows/release-ansible-collection.yml) | Build & publish to Ansible Galaxy |
+| Release Go (GoReleaser) | [release-go.yml](./.github/workflows/release-go.yml) | GoReleaser-based binary releases with multi-arch artifacts |
 | Container Registry Cleanup | [cleanup-container-registry.yml](./.github/workflows/cleanup-container-registry.yml) | GHCR & Docker Hub retention cleanup |
 
 ### AI
