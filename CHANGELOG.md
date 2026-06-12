@@ -80,16 +80,15 @@ This is a rolling release - changes are deployed continuously to `main`.
   - `actions/setup-go` `v6.3.0` → `v6.4.0`
   - `actions/upload-artifact` `v7.0.0` → `v7.0.1`
   - `github/codeql-action` `v4.35.5` → `v4.36.2`
-  - `aquasecurity/trivy-action` `0.35.0` → `v0.36.0`
+  - `aquasecurity/trivy-action` `v0.35.0` → `v0.36.0`
   - `trufflesecurity/trufflehog` `v3.94.0` → `v3.95.5`
   - `snok/container-retention-policy` `v3.0.1` → `v3.1.0`
   - `anthropics/claude-code-action` `v1.0.127` → `v1.0.142`
   - Digest-only refreshes for `golangci/golangci-lint-action` (v9),
     `reviewdog/action-actionlint` (v1), `DavidAnson/markdownlint-cli2-action`
     (v23), `docker/setup-buildx-action` (v4), `docker/build-push-action` (v7)
-- **ci-ansible-collection.yml**: Bump pinned `python-version` `3.12` → `3.14.5`
-- **security-config.yml**: Bump `ansible` `13.7.0` → `14.0.0` (the Trivy IaC
-  Ansible security pass)
+- **security-config.yml**: Bump `ansible` `13.7.0` → `14.0.0` and pinned
+  `python-version` `3.12` → `3.14.5` (the Trivy IaC Ansible security pass)
 
 ---
 
