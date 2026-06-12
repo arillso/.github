@@ -5,13 +5,20 @@ run-name: |
   Pull Request by @${{ github.actor }}
 
 "on":
+  # Only `main` on push (post-merge CI). Do NOT add `feature/**` here: a PR
+  # opened from a feature branch would then run every job twice (once for
+  # `push`, once for `pull_request`), and the per-`github.ref` concurrency
+  # group does not deduplicate them.
   push:
     branches:
       - main
-      - "feature/**"
     paths-ignore:
       - "**.md"
       - ".github/CODEOWNERS"
+  # NOTE: with `paths-ignore`, a PR touching only these paths runs no jobs.
+  # If you mark `go`/`lint`/`codeql` as required status checks in branch
+  # protection, such a PR can never satisfy them — drop `paths-ignore` or add
+  # a skip job if you need that.
   pull_request:
     branches:
       - main
