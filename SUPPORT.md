@@ -83,7 +83,7 @@ Want to help improve Arillso? See [CONTRIBUTING.md](CONTRIBUTING.md)
 
 ## 📖 Additional Resources
 
-- **Standards**: [STANDARDS.md](STANDARDS.md) - Development standards and best practices
+- **Conventions**: [AGENTS.md](AGENTS.md) - Repository conventions and reusable workflows
 - **Code of Conduct**: [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md) - Community guidelines
 - **License**: [LICENSE](LICENSE) - MIT License
 

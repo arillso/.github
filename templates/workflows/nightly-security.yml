@@ -1,0 +1,48 @@
+---
+name: Nightly Security Scan
+
+run-name: |
+  Security Scan by @${{ github.actor }}
+
+"on":
+  schedule:
+    - cron: "0 6 * * *"  # Daily 06:00 UTC
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}
+  cancel-in-progress: false
+
+jobs:
+  codeql:
+    name: Code Analysis
+    permissions:
+      contents: read
+      security-events: write
+    uses: arillso/.github/.github/workflows/security-code.yml@main
+    with:
+      languages: '["go"]'
+
+  secrets:
+    name: Secret Detection
+    permissions:
+      contents: read
+      actions: read
+    uses: arillso/.github/.github/workflows/security-secrets.yml@main
+
+  dependencies:
+    name: Dependency Audit
+    permissions:
+      contents: read
+      pull-requests: write
+      security-events: write
+    uses: arillso/.github/.github/workflows/security-deps.yml@main
+
+  trivy:
+    name: Vulnerability Scan
+    permissions:
+      contents: read
+      security-events: write
+    uses: arillso/.github/.github/workflows/security-trivy.yml@main
+    with:
+      scan_type: fs

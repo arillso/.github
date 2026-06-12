@@ -22,7 +22,7 @@ Default files that apply to all repositories without their own versions:
 
 ### 📚 Standards & Guidelines
 
-- **[STANDARDS.md](STANDARDS.md)** - Repository conventions, documentation standards, and best practices
+- **[AGENTS.md](AGENTS.md)** - Repository conventions, reusable workflows, and standards
 - **[CODEOWNERS](CODEOWNERS)** - Code ownership and review assignments
 
 ### 🔄 Shared Configurations
@@ -64,7 +64,7 @@ For example:
 
 ### Updating Standards
 
-Edit [STANDARDS.md](STANDARDS.md) and ensure all repositories follow the updated conventions.
+Update [AGENTS.md](AGENTS.md) and the [templates/](templates/) and ensure all repositories follow the updated conventions.
 
 ## Resources
 

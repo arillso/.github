@@ -19,7 +19,7 @@ All Arillso projects follow standardized practices:
 - **Testing**: Add or update tests for new features or bug fixes
 - **Commits**: Use clear, descriptive commit messages
 
-For detailed standards, see [STANDARDS.md](https://github.com/arillso/.github/blob/main/STANDARDS.md).
+For detailed conventions, see [AGENTS.md](https://github.com/arillso/.github/blob/main/AGENTS.md).
 
 ## Project-Specific Guidelines
 

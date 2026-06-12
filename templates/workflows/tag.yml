@@ -1,7 +1,11 @@
 ---
-# NOTE: This is a standalone deployment template for Docker container projects.
-# There is no reusable workflow for this yet. Adjust to your project needs.
-name: Deployment
+# NOTE: This is a standalone container-release template for Docker image
+# projects. There is no reusable workflow for this yet. Adjust to your
+# project needs (for Go binary releases, use release-go.yml instead).
+name: Container Release
+
+run-name: |
+  Container Release by @${{ github.actor }}
 
 "on":
   push:
@@ -20,7 +24,7 @@ env:
   IMAGE_NAME: ${{ github.repository }}
 
 concurrency:
-  group: deploy-${{ github.ref }}
+  group: tag-${{ github.ref }}
   cancel-in-progress: false
 
 jobs:
