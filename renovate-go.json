@@ -25,12 +25,29 @@
       "semanticCommitScope": "deps"
     },
     {
-      "description": "Group google.golang.org packages",
+      "description": "Kubernetes packages - k8s.io/* and sigs.k8s.io/* are co-versioned, so separateMultipleMajor: false keeps their majors in one branch/PR to avoid mismatched-version build breaks.",
       "matchManagers": ["gomod"],
-      "matchPackageNames": ["google.golang.org/**"],
-      "groupName": "google.golang.org packages",
+      "matchPackageNames": ["k8s.io/**", "sigs.k8s.io/**"],
+      "groupName": "Kubernetes packages",
       "semanticCommitType": "chore",
-      "semanticCommitScope": "deps"
+      "semanticCommitScope": "platform",
+      "minimumReleaseAge": "7 days",
+      "labels": ["platform"],
+      "separateMultipleMajor": false
+    },
+    {
+      "description": "Go platform packages - gRPC, Prometheus, google.golang.org. Independent ecosystems, so majors stay separate (no separateMultipleMajor override).",
+      "matchManagers": ["gomod"],
+      "matchPackageNames": [
+        "google.golang.org/**",
+        "github.com/grpc-ecosystem/**",
+        "github.com/prometheus/**"
+      ],
+      "groupName": "Go platform packages",
+      "semanticCommitType": "chore",
+      "semanticCommitScope": "platform",
+      "minimumReleaseAge": "7 days",
+      "labels": ["platform"]
     },
     {
       "description": "Group go.uber.org packages",

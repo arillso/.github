@@ -6,6 +6,33 @@ This is a rolling release - changes are deployed continuously to `main`.
 
 ---
 
+## 2026-06-12
+
+### Changed
+
+- **security-secrets.yml**: Add `cancel-in-progress` and `concurrency-suffix`
+  inputs with a static `security-secrets-` concurrency group (a bare
+  `github.workflow`/`github.ref` group collides across reusables called by the
+  same caller, since that context resolves to the caller inside `workflow_call`)
+  - Update `trufflesecurity/trufflehog` from `v3.94.0` to `v3.95.5`
+  - Update `actions/checkout` from `v6.0.2` to `v6.0.3`
+- **ci-go.yml**: Add `go mod verify`, `go vet`, `gofmt -s -l` format check
+  (scoped to first-party package dirs via `go list ./...` so `vendor/` and
+  generated code don't trip the gate), and `staticcheck` (new
+  `enable_staticcheck` input, default `true`); upload an HTML coverage report
+  artifact
+  - Add `cancel-in-progress` and `concurrency-suffix` inputs with a static
+    `ci-go-` concurrency group (see security-secrets note above)
+- **renovate-base.json**: Throttle `prHourlyLimit` from `0` (unlimited) to `4`;
+  enable `osvVulnerabilityAlerts`; treat pre-1.0 minor bumps as breaking
+  (`matchUpdateTypes: ["major", "minor"]`)
+- **renovate-go.json**: Split the `google.golang.org` group into a "Kubernetes
+  packages" group (`k8s.io/*` + `sigs.k8s.io/*`, co-versioned, with
+  `separateMultipleMajor: false` so their majors share one PR) and a "Go platform
+  packages" group (gRPC, Prometheus, `google.golang.org`, majors kept separate)
+
+---
+
 ## 2026-06-02
 
 ### Added

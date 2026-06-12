@@ -263,6 +263,8 @@ jobs:
 - `enable-gitleaks` (optional): Enable Gitleaks scanning (default: `true`)
 - `enable-trufflehog` (optional): Enable TruffleHog scanning (default: `true`)
 - `enable-pattern-detection` (optional): Enable custom pattern detection (default: `true`)
+- `cancel-in-progress` (optional): Cancel in-progress runs in the same concurrency group (default: `true`)
+- `concurrency-suffix` (optional): Suffix appended to the concurrency group for parallel invocations (default: `''`)
 
 **Jobs:**
 
@@ -309,7 +311,12 @@ jobs:
 
 #### `ai-claude-review.yml`
 
-Automated AI code review on pull requests. Skips PRs from renovate[bot].
+Automated AI code review on pull requests. Detects whether it has reviewed this
+PR before: on the **first** pass it runs a full `/code-review --comment` with
+Claude Opus; on **follow-up** pushes it only inspects the delta since its last
+review (using Claude Sonnet to keep cost down), replies to its prior inline
+comments, and resolves threads once issues are addressed. Skips draft PRs,
+renovate[bot]/dependabot[bot] PRs, and fork PRs (which run without secrets).
 
 **Usage:**
 
@@ -318,7 +325,7 @@ name: Code Review
 
 on:
   pull_request:
-    types: [opened, synchronize]
+    types: [opened, synchronize, ready_for_review, reopened]
 
 jobs:
   review:
@@ -326,6 +333,11 @@ jobs:
     secrets:
       CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
 ```
+
+**Inputs:**
+
+- `cancel-in-progress` (optional): Cancel in-progress runs in the same concurrency group (default: `true`)
+- `concurrency-suffix` (optional): Suffix appended to the concurrency group for parallel invocations (default: `''`)
 
 **Secrets:**
 
