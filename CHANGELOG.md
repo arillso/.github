@@ -61,6 +61,36 @@ This is a rolling release - changes are deployed continuously to `main`.
   `separateMultipleMajor: false` so their majors share one PR) and a "Go platform
   packages" group (gRPC, Prometheus, `google.golang.org`, majors kept separate)
 
+### Fixed
+
+- **renovate-base.json**: Stop digest-pinning dependencies that cannot carry a
+  digest. The base preset forces `pinDigests: true` on all `github-actions`
+  deps (reinforced by `config:best-practices`), which aborted entire Renovate
+  branches with "Digest is not updated" for two dependency shapes. Two targeted
+  `packageRules` now set `pinDigests: false`: release binaries installed via
+  helper actions (`uses-with` inputs with the `github-releases` datasource —
+  gitleaks, trivy, golangci-lint — pinned by release tag, not digest) and the
+  `kubesec/kubesec` docker image referenced as a bare version string. These
+  deps keep updating by tag/version; only the impossible digest pin is dropped
+
+### Dependencies
+
+- **GitHub Actions** (Renovate batch): SHA-pinned action references updated
+  - `actions/checkout` `v6.0.2` → `v6.0.3`
+  - `actions/setup-go` `v6.3.0` → `v6.4.0`
+  - `actions/upload-artifact` `v7.0.0` → `v7.0.1`
+  - `github/codeql-action` `v4.35.5` → `v4.36.2`
+  - `aquasecurity/trivy-action` `0.35.0` → `v0.36.0`
+  - `trufflesecurity/trufflehog` `v3.94.0` → `v3.95.5`
+  - `snok/container-retention-policy` `v3.0.1` → `v3.1.0`
+  - `anthropics/claude-code-action` `v1.0.127` → `v1.0.142`
+  - Digest-only refreshes for `golangci/golangci-lint-action` (v9),
+    `reviewdog/action-actionlint` (v1), `DavidAnson/markdownlint-cli2-action`
+    (v23), `docker/setup-buildx-action` (v4), `docker/build-push-action` (v7)
+- **ci-ansible-collection.yml**: Bump pinned `python-version` `3.12` → `3.14.5`
+- **security-config.yml**: Bump `ansible` `13.7.0` → `14.0.0` (the Trivy IaC
+  Ansible security pass)
+
 ---
 
 ## 2026-06-02
