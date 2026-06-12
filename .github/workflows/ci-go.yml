@@ -47,8 +47,13 @@ permissions:
   contents: read
 
 concurrency:
+  # Static `ci-go-` discriminator: inside a `workflow_call` reusable
+  # `github.workflow`/`github.ref` resolve to the *caller*, so without it two
+  # different reusables invoked from the same caller (e.g. this + security-secrets)
+  # would share a group and cancel each other. `concurrency-suffix` further
+  # separates parallel invocations of this same reusable.
   group: >-
-    ${{ github.workflow }}-${{ github.ref }}${{
+    ci-go-${{ github.workflow }}-${{ github.ref }}${{
       inputs.concurrency-suffix != '' && format('-{0}', inputs.concurrency-suffix) || ''
     }}
   cancel-in-progress: ${{ inputs.cancel-in-progress }}
@@ -86,9 +91,14 @@ jobs:
 
       - name: Check formatting
         run: |
-          if [ "$(gofmt -s -l . | wc -l)" -gt 0 ]; then
+          # Scope to first-party package dirs: `go list ./...` excludes vendor/
+          # and out-of-module code, so the gate never fails on third-party or
+          # generated files the consumer can't reformat. Pipe dirs to gofmt via
+          # xargs (one path per line) instead of unquoted word-splitting.
+          UNFORMATTED=$(go list -f '{{.Dir}}' ./... | xargs gofmt -s -l)
+          if [ -n "$UNFORMATTED" ]; then
             echo "::error::The following files are not formatted:"
-            gofmt -s -l .
+            echo "$UNFORMATTED"
             exit 1
           fi
 
