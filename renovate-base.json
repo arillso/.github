@@ -61,6 +61,19 @@
       "semanticCommitScope": "actions"
     },
     {
+      "description": "Release binaries installed via helper actions (e.g. jaxxstorm/action-install-gh-release, aquasecurity/setup-trivy) are pinned by release tag, not by digest. Forcing pinDigests here makes Renovate fail with 'update failure' (Digest is not updated), so disable it for these uses-with inputs.",
+      "matchManagers": ["github-actions"],
+      "matchDepTypes": ["uses-with"],
+      "matchDatasources": ["github-releases"],
+      "pinDigests": false
+    },
+    {
+      "description": "Docker images referenced as a bare version string (no @sha256 slot), e.g. kubesec/kubesec via an env var, cannot carry a digest. Forcing pinDigests makes Renovate fail with 'update failure' (Digest is not updated), so disable it for these.",
+      "matchDatasources": ["docker"],
+      "matchDepNames": ["kubesec/kubesec"],
+      "pinDigests": false
+    },
+    {
       "description": "arillso/.github - date tags, no digest pinning, immediate merge",
       "matchDepNames": ["arillso/.github"],
       "pinDigests": false,
