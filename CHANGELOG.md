@@ -8,7 +8,37 @@ This is a rolling release - changes are deployed continuously to `main`.
 
 ## 2026-06-12
 
+### Added
+
+- **templates/workflows/pull-request.yml**: New event-focused PR template
+  (`name: Pull Request`) combining Go CI, lint, CodeQL (via `security-code.yml`),
+  and Claude review (via `ai-claude-review.yml`) as jobs — replaces `ci.yml` +
+  `codeql.yml`
+- **templates/workflows/nightly-security.yml**: New scheduled security template
+  (`name: Nightly Security Scan`) running CodeQL, secret, dependency, and Trivy
+  scans
+
 ### Changed
+
+- **templates/workflows/**: Migrate the workflow templates from the deprecated
+  file-centric layout (`ci.yml`/`codeql.yml`/`deploy.yml`) to the event-focused
+  layout (`pull-request.yml`/`nightly-security.yml`/`tag.yml`). `deploy.yml`
+  renamed to `tag.yml` (`name: Container Release`) with a `run-name:` added;
+  content otherwise unchanged
+- **AGENTS.md**: Update the consumer usage example to the event-focused
+  `pull-request.yml` layout and a valid reusable (`ci-go.yml`/`ci-lint.yml`,
+  not the non-existent `ci-go-action.yml`)
+- **README.md / SUPPORT.md / CONTRIBUTING.md**: Repoint standards references from
+  the removed `STANDARDS.md` to `AGENTS.md` and `templates/`
+
+### Removed
+
+- **STANDARDS.md**: Removed. It mandated the deprecated file-centric workflow
+  layout and duplicated conventions; the Ansible-specific standards it held are
+  now tracked in the organization knowledge base, and reusable-workflow
+  conventions live in `AGENTS.md` + `templates/`
+- **templates/workflows/ci.yml, codeql.yml, deploy.yml**: Removed in favor of the
+  event-focused templates above
 
 - **security-secrets.yml**: Add `cancel-in-progress` and `concurrency-suffix`
   inputs with a static `security-secrets-` concurrency group (a bare

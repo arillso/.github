@@ -168,19 +168,25 @@ This repository provides shared Renovate presets for consumer repositories:
 ### Usage Pattern
 
 ```yaml
-# In consumer repository .github/workflows/ci.yml
-name: CI
+# In consumer repository .github/workflows/pull-request.yml
+name: Pull Request
 
 on:
   pull_request:
     branches: [main]
 
 jobs:
-  ci:
-    uses: arillso/.github/.github/workflows/ci-go-action.yml@main
+  go:
+    uses: arillso/.github/.github/workflows/ci-go.yml@main
+
+  lint:
+    uses: arillso/.github/.github/workflows/ci-lint.yml@main
     with:
       enable_shellcheck: true
 ```
+
+See [templates/workflows/](./templates/workflows/) for the full event-focused
+workflow set (`pull-request.yml`, `nightly-security.yml`, `tag.yml`).
 
 ### Required Secrets in Consumer Repos
 
@@ -208,7 +214,6 @@ jobs:
 ├── CLAUDE.md                    # Claude Code import
 ├── README.md                    # Human-readable documentation
 ├── CHANGELOG.md                 # Version history
-├── STANDARDS.md                 # Repository standards for all projects
 ├── LICENSE                      # MIT License
 ├── .editorconfig                # Editor consistency
 ├── .gitignore                   # Git ignore patterns
