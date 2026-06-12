@@ -6,6 +6,28 @@ This is a rolling release - changes are deployed continuously to `main`.
 
 ---
 
+## 2026-06-12
+
+### Changed
+
+- **security-secrets.yml**: Replace manual gitleaks install with the official
+  `gitleaks/gitleaks-action@v3.0.0`; scope `pull-requests:read` to the gitleaks job
+  - Add `cancel-in-progress` and `concurrency-suffix` inputs with a concurrency group
+  - Update `trufflesecurity/trufflehog` from `v3.94.0` to `v3.95.5`
+  - Update `actions/checkout` from `v6.0.2` to `v6.0.3`
+- **ci-go.yml**: Add `go mod verify`, `go vet`, `gofmt -s -l` format check, and
+  `staticcheck` (new `enable_staticcheck` input, default `true`); upload an HTML
+  coverage report artifact
+  - Add `cancel-in-progress` and `concurrency-suffix` inputs with a concurrency group
+- **renovate-base.json**: Throttle `prHourlyLimit` from `0` (unlimited) to `4`;
+  enable `osvVulnerabilityAlerts`; treat pre-1.0 minor bumps as breaking
+  (`matchUpdateTypes: ["major", "minor"]`)
+- **renovate-go.json**: Broaden the `google.golang.org` group into a "Go platform
+  packages" group (gRPC, Kubernetes, Prometheus) with `separateMultipleMajor: false`
+  so co-dependent `k8s.io/*` + `sigs.k8s.io/*` majors share one PR
+
+---
+
 ## 2026-06-02
 
 ### Added

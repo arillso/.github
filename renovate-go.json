@@ -25,12 +25,21 @@
       "semanticCommitScope": "deps"
     },
     {
-      "description": "Group google.golang.org packages",
+      "description": "Go platform packages - gRPC, Kubernetes, Prometheus. separateMultipleMajor: false so co-dependent k8s.io/* + sigs.k8s.io/* majors share one branch/PR.",
       "matchManagers": ["gomod"],
-      "matchPackageNames": ["google.golang.org/**"],
-      "groupName": "google.golang.org packages",
+      "matchPackageNames": [
+        "google.golang.org/**",
+        "github.com/grpc-ecosystem/**",
+        "k8s.io/**",
+        "sigs.k8s.io/**",
+        "github.com/prometheus/**"
+      ],
+      "groupName": "Go platform packages",
       "semanticCommitType": "chore",
-      "semanticCommitScope": "deps"
+      "semanticCommitScope": "platform",
+      "minimumReleaseAge": "7 days",
+      "labels": ["platform"],
+      "separateMultipleMajor": false
     },
     {
       "description": "Group go.uber.org packages",
