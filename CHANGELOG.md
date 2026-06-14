@@ -6,6 +6,23 @@ This is a rolling release - changes are deployed continuously to `main`.
 
 ---
 
+## 2026-06-14
+
+### Fixed
+
+- **renovate-base.json**: The comment `customManager` greedily captured the
+  entire value after a `# renovate:` marker into `currentValue`. For
+  digest-pinned image references (`image: repo:tag@sha256:...`) this swallowed
+  tag and digest into one string, so Renovate could not compute a valid update
+  and produced noisy/failing digest bumps. `currentValue` now stops at `@` and
+  an optional `@sha256:...` suffix is captured separately as `currentDigest`,
+  letting consumers pin Docker images referenced from arbitrary YAML (e.g.
+  molecule `platforms[].image`) via a marker comment and keep the digest fresh.
+  Bare values (versions, quoted strings, plain image tags) have no `@` and match
+  exactly as before
+
+---
+
 ## 2026-06-12
 
 ### Added
