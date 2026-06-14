@@ -8,6 +8,21 @@ This is a rolling release - changes are deployed continuously to `main`.
 
 ## 2026-06-14
 
+### Added
+
+- **renovate-ansible.json**: Dedicated `docker` customManager for molecule
+  platform images, covering both layouts — collection-wide
+  `extensions/molecule/<scenario>/molecule.yml` and per-role
+  `roles/<role>/molecule/<scenario>/molecule.yml`. It parses the `image:`
+  line directly (`depName` = repo, `currentValue` = bare tag, optional
+  `@sha256:...` = `currentDigest`), the shape the Docker datasource needs to
+  refresh the digest. A `pinDigests: true` rule scoped to those files turns a
+  bare `:latest` into `:latest@sha256:...` so the test base image becomes
+  reproducible and Renovate keeps the digest fresh. The native docker-compose
+  manager does not apply — molecule.yml is not a compose schema (`platforms:`,
+  no `services:`). Consuming collections (ansible.system, ansible.container,
+  ansible.agent) get this with no per-repo config beyond the preset pin.
+
 ### Fixed
 
 - **renovate-base.json**: The comment `customManager` greedily captured the

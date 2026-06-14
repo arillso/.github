@@ -23,6 +23,16 @@
       "description": "Update Ansible collections even with range constraints",
       "matchManagers": ["ansible-galaxy"],
       "rangeStrategy": "update-lockfile"
+    },
+    {
+      "description": "Molecule platform images are pinned by digest so the test base image is reproducible. These images (e.g. geerlingguy/docker-*-ansible) publish only a `latest` tag, so pinDigests turns a bare `:latest` into `:latest@sha256:...` and Renovate keeps the digest fresh on its own update cadence.",
+      "matchManagers": ["custom.regex"],
+      "matchDatasources": ["docker"],
+      "matchFileNames": [
+        "**/extensions/molecule/**/molecule.yml",
+        "**/roles/**/molecule/**/molecule.yml"
+      ],
+      "pinDigests": true
     }
   ],
   "ansible-galaxy": {
@@ -39,6 +49,18 @@
       ],
       "extractVersionTemplate": "{{#if extractVersion}}{{{extractVersion}}}{{else}}^(?<version>.*)${{/if}}",
       "versioningTemplate": "{{#if versioning}}{{{versioning}}}{{else}}semver{{/if}}"
+    },
+    {
+      "description": "Molecule platform images. molecule.yml uses a compose-like `image:` key but is not a compose schema (`platforms:`, no `services:`), so the native docker-compose manager extracts nothing. Parse the `image:` line directly so depName is the repo, currentValue is the bare tag, and an optional `@sha256:...` is the digest — the shape the docker datasource needs to refresh the digest. Covers both layouts: collection-wide `extensions/molecule/<scenario>/` and per-role `roles/<role>/molecule/<scenario>/`.",
+      "customType": "regex",
+      "managerFilePatterns": [
+        "/(^|/)extensions/molecule/[^/]+/molecule\\.yml$/",
+        "/(^|/)roles/[^/]+/molecule/[^/]+/molecule\\.yml$/"
+      ],
+      "datasourceTemplate": "docker",
+      "matchStrings": [
+        "image:\\s*[\"']?(?<depName>[^:\\s\"']+):(?<currentValue>[^@\\s\"']+?)(?:@(?<currentDigest>sha256:[a-f0-9]+))?[\"']?\\s*(?:\\r?\\n|\\r|$)"
+      ]
     }
   ]
 }
