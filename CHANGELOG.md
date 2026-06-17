@@ -27,6 +27,12 @@ This is a rolling release - changes are deployed continuously to `main`.
   `release.yml` to `tag.yml` (the event-focused template slot for tag pushes,
   alongside `pull-request.yml` / `nightly-security.yml`); the `name:` stays
   `Release - Ansible Collection`
+- **release-ansible-collection.yml**: Read the publish Python version from the
+  repo-root `.python-version` file when the `python_version` input is not set
+  (input → `.python-version` → `3.11` fallback). The input default changed from
+  `3.11` to empty; callers that pass `python_version` are unaffected, callers
+  that relied on the silent `3.11` default now get `.python-version` if present.
+  Makes `.python-version` authoritative for releases.
 
 ---
 

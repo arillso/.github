@@ -278,12 +278,11 @@ file on a current released Python (custom manager, `python-version` datasource).
 A collection without `.python-version` is drift — add one. `requires_ansible` is
 `>=2.18.0` across the collections.
 
-**Release-path caveat**: `release-ansible-collection.yml` has its own
-`python_version` input (default `3.11`) and does **not** read `.python-version`.
-A collection that bumps `.python-version` must also pass the matching
-`python_version` to the reusable workflow, or the publish build keeps using the
-old default. (Follow-up: make the release workflow read `.python-version` when
-present so the file is truly authoritative.)
+`release-ansible-collection.yml` resolves the Python version in this order:
+the `python_version` input when set, otherwise the repo-root `.python-version`
+file, otherwise `3.11`. So `.python-version` is authoritative for the publish
+build with no extra wiring — only pass `python_version` to override it for a
+specific release.
 
 ---
 

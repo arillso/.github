@@ -14,10 +14,12 @@ on:
         required: true
         type: string
       python_version:
-        description: 'Python version to use'
+        description: >-
+          Python version to use. When empty, the workflow reads the repo-root
+          .python-version file, falling back to 3.11 if that is absent too.
         required: false
         type: string
-        default: '3.11'
+        default: ''
     secrets:
       galaxy_api_key:
         description: 'Ansible Galaxy API key'
@@ -58,10 +60,28 @@ jobs:
             echo "found=false" >> $GITHUB_OUTPUT
           fi
 
+      - name: Resolve Python version
+        id: python
+        env:
+          PYTHON_VERSION_INPUT: ${{ inputs.python_version }}
+        run: |
+          FILE_VERSION=""
+          if [ -f ".python-version" ]; then
+            FILE_VERSION="$(head -n1 .python-version | tr -d '[:space:]')"
+          fi
+          if [ -n "$PYTHON_VERSION_INPUT" ]; then
+            VERSION="$PYTHON_VERSION_INPUT"
+          elif [ -n "$FILE_VERSION" ]; then
+            VERSION="$FILE_VERSION"
+          else
+            VERSION="3.11"
+          fi
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+
       - name: Set up Python
         uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6
         with:
-          python-version: ${{ inputs.python_version }}
+          python-version: ${{ steps.python.outputs.version }}
 
       - name: Build and Publish Collection
         uses: artis3n/ansible_galaxy_collection@ffbca2460a5a1c600b941bbf1536bd61de1c2227 # v3
