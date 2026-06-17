@@ -6,6 +6,23 @@ This is a rolling release - changes are deployed continuously to `main`.
 
 ---
 
+## 2026-06-17
+
+### Added
+
+- **AGENTS.md**: New "Ansible Collection Conventions" section documenting the
+  shared release workflow shape (`name`, `run-name`, `concurrency`), the
+  Keep-a-Changelog format, the cross-collection dependency-bound matrix
+  (`arillso.container` → `arillso.system >=0.0.17`, `arillso.agent` →
+  `arillso.system >=0.0.36`) plus min-version policy, and the common
+  `.python-version` requirement
+- **templates/CHANGELOG.md**: Keep-a-Changelog + SemVer template for bootstrapping
+  collection changelogs
+- **renovate-ansible.json**: Custom manager that keeps `.python-version` on a
+  current released Python (`python-version` datasource, `pep440` versioning)
+
+---
+
 ## 2026-06-14
 
 ### Added

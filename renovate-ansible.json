@@ -61,6 +61,15 @@
       "matchStrings": [
         "image:\\s*[\"']?(?<depName>[^:\\s\"']+):(?<currentValue>[^@\\s\"']+?)(?:@(?<currentDigest>sha256:[a-f0-9]+))?[\"']?\\s*(?:\\r?\\n|\\r|$)"
       ]
+    },
+    {
+      "description": "Keep .python-version pinned to a current released Python",
+      "customType": "regex",
+      "managerFilePatterns": ["/(^|/)\\.python-version$/"],
+      "matchStrings": ["(?<currentValue>\\d+\\.\\d+(\\.\\d+)?)"],
+      "depNameTemplate": "python",
+      "datasourceTemplate": "python-version",
+      "versioningTemplate": "pep440"
     }
   ]
 }
