@@ -65,10 +65,14 @@ jobs:
         env:
           PYTHON_VERSION_INPUT: ${{ inputs.python_version }}
         run: |
+          FILE_VERSION=""
+          if [ -f ".python-version" ]; then
+            FILE_VERSION="$(head -n1 .python-version | tr -d '[:space:]')"
+          fi
           if [ -n "$PYTHON_VERSION_INPUT" ]; then
             VERSION="$PYTHON_VERSION_INPUT"
-          elif [ -f ".python-version" ]; then
-            VERSION="$(head -n1 .python-version | tr -d '[:space:]')"
+          elif [ -n "$FILE_VERSION" ]; then
+            VERSION="$FILE_VERSION"
           else
             VERSION="3.11"
           fi
