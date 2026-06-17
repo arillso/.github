@@ -21,6 +21,13 @@ This is a rolling release - changes are deployed continuously to `main`.
 - **renovate-ansible.json**: Custom manager that keeps `.python-version` on a
   current released Python (`python-version` datasource, `pep440` versioning)
 
+### Changed
+
+- **AGENTS.md**: Correct the collection release workflow filename from
+  `release.yml` to `tag.yml` (the event-focused template slot for tag pushes,
+  alongside `pull-request.yml` / `nightly-security.yml`); the `name:` stays
+  `Release - Ansible Collection`
+
 ---
 
 ## 2026-06-14
