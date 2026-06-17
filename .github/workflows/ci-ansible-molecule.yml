@@ -9,13 +9,21 @@ name: CI - Ansible Molecule
 #
 # Scenario discovery:
 # - If `scenarios` (JSON array) is provided, that list is used verbatim.
-# - Otherwise the workflow lists `extensions/molecule/` and skips any
-#   directory whose name begins with `.` (e.g. `.config`).
+# - Otherwise the workflow lists `scenarios_root` and skips any directory
+#   whose name begins with `.` (e.g. `.config`).
 #
-# Driver: docker (containers from geerlingguy/docker-*-ansible). Roles
-# that touch the kernel (sysctl write, nftables load, swap, ethtool)
-# should ship a `test_sequence:` in their scenario's molecule.yml that
-# stops at `syntax` — running them under docker is otherwise unreliable.
+# Driver (input `driver`):
+# - `docker` (default): containers from geerlingguy/docker-*-ansible. Roles
+#   that touch the kernel (sysctl write, nftables load, swap, ethtool) should
+#   ship a `test_sequence:` stopping at `syntax` in their molecule.yml —
+#   running them under docker is otherwise unreliable.
+# - `qemu`: boots full VMs via the molecule-qemu driver for roles that need a
+#   real kernel and init system (k3s, container engines, systemd services).
+#   GitHub-hosted ubuntu-latest exposes a writable /dev/kvm, so molecule-qemu
+#   auto-detects hardware acceleration (falls back to TCG otherwise). The job
+#   installs QEMU, adds the runner user to the kvm group, and runs molecule
+#   via `sg kvm` (group changes do not affect the current shell). Each role's
+#   molecule.yml selects `driver: molecule-qemu` and defines its platforms.
 
 on:
   workflow_call:
@@ -29,6 +37,13 @@ on:
         type: string
         required: true
         description: 'Collection name.'
+      driver:
+        type: string
+        required: false
+        default: 'docker'
+        description: |
+          Molecule driver: `docker` (default, fast containers) or `qemu`
+          (full VMs via molecule-qemu, for roles needing a real kernel/init).
       python_version:
         type: string
         required: false
@@ -39,7 +54,7 @@ on:
         required: false
         default: ''
         description: |
-          JSON array of scenario directory names under `extensions/molecule/`.
+          JSON array of scenario directory names under `scenarios_root`.
           When empty, the workflow discovers scenarios automatically and
           builds the matrix from the directory listing (entries starting
           with `.` are skipped).
@@ -50,13 +65,15 @@ on:
         description: |
           Path (relative to the collection root) where scenarios live.
           Defaults to the layout shipped inside published collection
-          tarballs; override for repos that keep scenarios outside
-          `extensions/`.
+          tarballs; override for repos that keep scenarios elsewhere.
       runs_on:
         type: string
         required: false
         default: 'ubuntu-latest'
-        description: 'GitHub-hosted runner label for the molecule matrix legs.'
+        description: |
+          GitHub-hosted runner label for the molecule matrix legs. The
+          standard ubuntu-latest runner exposes /dev/kvm, so the `qemu`
+          driver does not require a larger/paid runner.
       cancel-in-progress:
         type: boolean
         required: false
@@ -93,6 +110,16 @@ jobs:
     outputs:
       scenarios: ${{ steps.list.outputs.scenarios }}
     steps:
+      - name: Validate driver input
+        env:
+          DRIVER: ${{ inputs.driver }}
+        run: |
+          set -euo pipefail
+          case "$DRIVER" in
+            docker|qemu) ;;
+            *) echo "::error::Invalid driver '$DRIVER' (expected 'docker' or 'qemu')"; exit 1 ;;
+          esac
+
       - name: Checkout collection
         uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
         with:
@@ -157,6 +184,20 @@ jobs:
           cache: 'pip'
           cache-dependency-path: ansible_collections/${{ inputs.collection_namespace }}/${{ inputs.collection_name }}/requirements.txt
 
+      - name: Install QEMU/KVM and enable /dev/kvm access
+        if: inputs.driver == 'qemu'
+        run: |
+          set -euo pipefail
+          sudo apt-get update -qq
+          # genisoimage provides mkisofs (cloud-init seed ISO); qemu-system-x86
+          # + qemu-utils are the molecule-qemu runtime dependencies.
+          sudo apt-get install -y -qq \
+            qemu-system-x86 qemu-utils genisoimage
+          # The runner user is not in the kvm group by default; add it and
+          # confirm acceleration is usable (falls back to TCG otherwise).
+          sudo usermod -aG kvm "$USER"
+          test -e /dev/kvm && ls -l /dev/kvm
+
       - name: Install collection dev dependencies
         working-directory: ansible_collections/${{ inputs.collection_namespace }}/${{ inputs.collection_name }}
         run: |
@@ -184,6 +225,7 @@ jobs:
           ANSIBLE_FORCE_COLOR: '1'
           PY_COLORS: '1'
           MOLECULE_NO_LOG: 'false'
+          DRIVER: ${{ inputs.driver }}
           SCENARIO: ${{ matrix.scenario }}
           SCENARIOS_ROOT: ${{ inputs.scenarios_root }}
         run: |
@@ -191,16 +233,22 @@ jobs:
           # `molecule/`. SCENARIOS_ROOT is the parent of that directory
           # (e.g. `extensions/molecule` -> cd `extensions/`).
           cd "$(dirname "$SCENARIOS_ROOT")"
-          molecule test -s "$SCENARIO"
+          if [ "$DRIVER" = "qemu" ]; then
+            # `sg kvm` activates the freshly added group membership for this command.
+            sg kvm -c "molecule test -s '$SCENARIO'"
+          else
+            molecule test -s "$SCENARIO"
+          fi
 
       - name: Summarise scenario outcome
         if: always()
         env:
+          DRIVER: ${{ inputs.driver }}
           SCENARIO: ${{ matrix.scenario }}
           STATUS: ${{ job.status }}
         run: |
           {
-            echo "## Molecule scenario: \`$SCENARIO\`"
+            echo "## Molecule scenario (${DRIVER}): \`$SCENARIO\`"
             echo
             echo "**Status:** $STATUS"
           } >> "$GITHUB_STEP_SUMMARY"
