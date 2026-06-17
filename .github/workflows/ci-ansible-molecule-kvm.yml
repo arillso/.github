@@ -1,0 +1,212 @@
+---
+name: CI - Ansible Molecule (KVM)
+
+# Molecule test runner for Ansible roles that need a real kernel and a
+# real init system — k3s (needs modprobe / cgroups), container engines
+# (dockerd), and agents that must run as a stable systemd service. These
+# do not work reliably under the docker driver, so this variant uses the
+# molecule-qemu driver to boot full VMs with QEMU/KVM.
+#
+# KVM: GitHub-hosted ubuntu-latest runners expose a writable /dev/kvm,
+# so molecule-qemu auto-detects hardware acceleration (it checks vmx/svm
+# + /dev/kvm in its create playbook and falls back to TCG otherwise).
+# The runner user is added to the kvm group and molecule is invoked via
+# `sg kvm` because group changes do not affect the current shell.
+#
+# Scenario discovery and the per-scenario checkout/run flow mirror
+# ci-ansible-molecule.yml; only the driver dependencies and the KVM
+# setup differ. Each role's molecule.yml selects `driver: molecule-qemu`
+# and defines its platforms (cloud-image URL, checksum, arch, ssh user).
+
+on:
+  workflow_call:
+    inputs:
+      collection_namespace:
+        type: string
+        required: false
+        default: 'arillso'
+        description: 'Collection namespace (the part before the dot in `<ns>.<name>`).'
+      collection_name:
+        type: string
+        required: true
+        description: 'Collection name.'
+      python_version:
+        type: string
+        required: false
+        default: '3.12'
+        description: 'Python version to use for pip and the molecule run.'
+      scenarios:
+        type: string
+        required: false
+        default: ''
+        description: |
+          JSON array of scenario directory names under `scenarios_root`.
+          When empty, the workflow discovers scenarios automatically and
+          builds the matrix from the directory listing (entries starting
+          with `.` are skipped).
+      scenarios_root:
+        type: string
+        required: false
+        default: 'extensions/molecule'
+        description: |
+          Path (relative to the collection root) where scenarios live.
+          Override for repos that keep scenarios under `roles/<role>/molecule`.
+      runs_on:
+        type: string
+        required: false
+        default: 'ubuntu-latest'
+        description: |
+          GitHub-hosted runner label. The standard ubuntu-latest runner
+          exposes /dev/kvm, so a larger/paid runner is not required.
+      cancel-in-progress:
+        type: boolean
+        required: false
+        default: true
+        description: |
+          Whether to cancel in-progress runs in the same concurrency group.
+      concurrency-suffix:
+        type: string
+        required: false
+        default: ''
+        description: |
+          Optional suffix appended to the concurrency group as `-<suffix>`.
+          Set to separate parallel invocations of this reusable from the
+          same caller (e.g. per-role).
+
+permissions:
+  contents: read
+
+concurrency:
+  group: >-
+    ${{ github.workflow }}-${{ github.ref }}${{
+      inputs.concurrency-suffix != '' && format('-{0}', inputs.concurrency-suffix) || ''
+    }}
+  cancel-in-progress: ${{ inputs.cancel-in-progress }}
+
+jobs:
+  discover:
+    name: Discover scenarios
+    runs-on: ${{ inputs.runs_on }}
+    outputs:
+      scenarios: ${{ steps.list.outputs.scenarios }}
+    steps:
+      - name: Checkout collection
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        with:
+          persist-credentials: false
+
+      - name: Build scenario matrix
+        id: list
+        env:
+          INPUT_SCENARIOS: ${{ inputs.scenarios }}
+          SCENARIOS_ROOT: ${{ inputs.scenarios_root }}
+        run: |
+          set -euo pipefail
+
+          if [ -n "$INPUT_SCENARIOS" ]; then
+            echo "scenarios=$(echo "$INPUT_SCENARIOS" | jq -c '.')" >> "$GITHUB_OUTPUT"
+            echo "::notice::Using caller-supplied scenarios: $INPUT_SCENARIOS"
+            exit 0
+          fi
+
+          if [ ! -d "$SCENARIOS_ROOT" ]; then
+            echo "::error::Scenarios root '$SCENARIOS_ROOT' does not exist"
+            exit 1
+          fi
+
+          mapfile -t scenarios < <(
+            find "$SCENARIOS_ROOT" -mindepth 1 -maxdepth 1 -type d \
+              -not -name '.*' -printf '%f\n' | sort
+          )
+
+          if [ ${#scenarios[@]} -eq 0 ]; then
+            echo "::error::No scenarios discovered under $SCENARIOS_ROOT"
+            exit 1
+          fi
+
+          MATRIX=$(printf '%s\n' "${scenarios[@]}" | jq -R . | jq -sc .)
+          echo "scenarios=$MATRIX" >> "$GITHUB_OUTPUT"
+          echo "::notice::Discovered scenarios: $MATRIX"
+
+  molecule:
+    name: Molecule (${{ matrix.scenario }})
+    needs: discover
+    runs-on: ${{ inputs.runs_on }}
+    strategy:
+      fail-fast: false
+      matrix:
+        scenario: ${{ fromJson(needs.discover.outputs.scenarios) }}
+    steps:
+      - name: Checkout collection into ansible_collections/<ns>/<name>
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        with:
+          persist-credentials: false
+          path: ansible_collections/${{ inputs.collection_namespace }}/${{ inputs.collection_name }}
+
+      - name: Set up Python
+        uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0
+        with:
+          python-version: ${{ inputs.python_version }}
+          cache: 'pip'
+          cache-dependency-path: ansible_collections/${{ inputs.collection_namespace }}/${{ inputs.collection_name }}/requirements.txt
+
+      - name: Install QEMU/KVM and enable /dev/kvm access
+        run: |
+          set -euo pipefail
+          sudo apt-get update -qq
+          # genisoimage provides mkisofs (cloud-init seed ISO); qemu-system-x86
+          # + qemu-utils are the molecule-qemu runtime dependencies.
+          sudo apt-get install -y -qq \
+            qemu-system-x86 qemu-utils genisoimage
+          # The runner user is not in the kvm group by default; add it and
+          # confirm acceleration is usable (falls back to TCG otherwise).
+          sudo usermod -aG kvm "$USER"
+          test -e /dev/kvm && ls -l /dev/kvm
+
+      - name: Install collection dev dependencies
+        working-directory: ansible_collections/${{ inputs.collection_namespace }}/${{ inputs.collection_name }}
+        run: |
+          if [ ! -f requirements.txt ]; then
+            echo "::error::requirements.txt missing; cannot install molecule + driver"
+            exit 1
+          fi
+          pip install -r requirements.txt
+
+      - name: Install collection runtime dependencies
+        working-directory: ansible_collections/${{ inputs.collection_namespace }}/${{ inputs.collection_name }}
+        env:
+          SCENARIOS_ROOT: ${{ inputs.scenarios_root }}
+        run: |
+          req="${SCENARIOS_ROOT}/.config/requirements.yml"
+          if [ -f "$req" ]; then
+            ansible-galaxy collection install -r "$req"
+          else
+            echo "::notice::No shared collection requirements at $req — skipping"
+          fi
+
+      - name: Run molecule scenario
+        working-directory: ansible_collections/${{ inputs.collection_namespace }}/${{ inputs.collection_name }}
+        env:
+          ANSIBLE_FORCE_COLOR: '1'
+          PY_COLORS: '1'
+          MOLECULE_NO_LOG: 'false'
+          SCENARIO: ${{ matrix.scenario }}
+          SCENARIOS_ROOT: ${{ inputs.scenarios_root }}
+        run: |
+          # molecule resolves scenarios relative to the cwd that contains
+          # `molecule/`; SCENARIOS_ROOT is its parent. `sg kvm` activates
+          # the freshly added group membership for this command.
+          cd "$(dirname "$SCENARIOS_ROOT")"
+          sg kvm -c "molecule test -s '$SCENARIO'"
+
+      - name: Summarise scenario outcome
+        if: always()
+        env:
+          SCENARIO: ${{ matrix.scenario }}
+          STATUS: ${{ job.status }}
+        run: |
+          {
+            echo "## Molecule scenario (KVM): \`$SCENARIO\`"
+            echo
+            echo "**Status:** $STATUS"
+          } >> "$GITHUB_STEP_SUMMARY"
