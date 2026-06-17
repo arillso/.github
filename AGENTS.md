@@ -207,8 +207,10 @@ below.
 
 ### Release Workflow
 
-Every collection publishes via a single `.github/workflows/release.yml` that
-delegates to [release-ansible-collection.yml](./.github/workflows/release-ansible-collection.yml)
+Every collection publishes via a single `.github/workflows/tag.yml` (the
+tag-push slot of the event-focused template set, alongside `pull-request.yml`
+and `nightly-security.yml`) that delegates to
+[release-ansible-collection.yml](./.github/workflows/release-ansible-collection.yml)
 on a pushed SemVer tag. Use the same shape across all collections:
 
 ```yaml
@@ -233,9 +235,10 @@ jobs:
       galaxy_api_key: ${{ secrets.GALAXY_API_KEY }}
 ```
 
-- **`name:`** is always `Release - Ansible Collection` (matches the reusable
-  workflow `name:`); no per-collection variants like `Publish Collection` or
-  `Software Release`.
+- **`name:`** is always `Release - Ansible Collection` for collections (matches
+  the reusable workflow `name:`); no per-collection variants like
+  `Publish Collection` or `Software Release`. The file is `tag.yml` either way —
+  only the `name:` differs from the container template's `Container Release`.
 - **`concurrency` with `cancel-in-progress: false`** so a release never aborts
   mid-publish.
 - **`run-name`** identifies the tag in the Actions list.
