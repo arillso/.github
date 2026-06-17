@@ -198,6 +198,92 @@ workflow set (`pull-request.yml`, `nightly-security.yml`, `tag.yml`).
 
 ---
 
+## Ansible Collection Conventions
+
+Conventions for the `arillso.*` collections (`ansible.system`, `ansible.container`,
+`ansible.agent`, …). These collections live in their own repositories but share
+the reusable workflows and presets defined here. Keep them aligned with the rules
+below.
+
+### Release Workflow
+
+Every collection publishes via a single `.github/workflows/release.yml` that
+delegates to [release-ansible-collection.yml](./.github/workflows/release-ansible-collection.yml)
+on a pushed SemVer tag. Use the same shape across all collections:
+
+```yaml
+---
+name: Release - Ansible Collection
+run-name: Release ${{ github.ref_name }}
+
+on:
+  push:
+    tags: ['*']
+
+concurrency:
+  group: release-${{ github.ref_name }}
+  cancel-in-progress: false
+
+jobs:
+  release:
+    uses: arillso/.github/.github/workflows/release-ansible-collection.yml@<date-tag>
+    with:
+      collection_name: <name>
+    secrets:
+      galaxy_api_key: ${{ secrets.GALAXY_API_KEY }}
+```
+
+- **`name:`** is always `Release - Ansible Collection` (matches the reusable
+  workflow `name:`); no per-collection variants like `Publish Collection` or
+  `Software Release`.
+- **`concurrency` with `cancel-in-progress: false`** so a release never aborts
+  mid-publish.
+- **`run-name`** identifies the tag in the Actions list.
+- **Tags carry no `v` prefix** (`1.0.0`, not `v1.0.0`). The release workflow
+  derives the version as `${GITHUB_REF#refs/tags/}` and looks up `## [VERSION]`
+  in the CHANGELOG; a `v`-prefixed tag would not match the heading and the
+  workflow silently falls back to GitHub's generated release notes.
+
+### CHANGELOG Format
+
+All collections use [Keep a Changelog](https://keepachangelog.com/) with SemVer
+headings (not the date-based rolling format this `.github` repo uses for itself).
+Bootstrap new collections from [templates/CHANGELOG.md](./templates/CHANGELOG.md).
+The release workflow extracts the matching `## [VERSION]` section as release notes
+— so the heading (`## [1.0.0]`) must match the un-prefixed tag name exactly.
+
+### Cross-Collection Dependency Bounds
+
+Inter-collection dependencies are declared in each collection's `galaxy.yml`
+`dependencies:` (there is no `requirements.yml`). Keep this matrix current when a
+bound changes:
+
+| Collection | Depends on | Min version |
+|------------|------------|-------------|
+| `arillso.container` | `arillso.system` | `>=0.0.17` |
+| `arillso.agent` | `arillso.system` | `>=0.0.36` |
+
+**Min-version policy**: bump a lower bound only when a feature or fix in the
+dependency is actually required, and record the reason in the CHANGELOG entry of
+the consuming collection. Avoid floating (`*`) bounds.
+
+### Python Version
+
+All collections target the same Python and pin it in a repo-root `.python-version`
+file. The shared [renovate-ansible](./renovate-ansible.json) preset keeps that
+file on a current released Python (custom manager, `python-version` datasource).
+A collection without `.python-version` is drift — add one. `requires_ansible` is
+`>=2.18.0` across the collections.
+
+**Release-path caveat**: `release-ansible-collection.yml` has its own
+`python_version` input (default `3.11`) and does **not** read `.python-version`.
+A collection that bumps `.python-version` must also pass the matching
+`python_version` to the reusable workflow, or the publish build keeps using the
+old default. (Follow-up: make the release workflow read `.python-version` when
+present so the file is truly authoritative.)
+
+---
+
 ## Repository Structure
 
 ```text
