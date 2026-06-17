@@ -10,17 +10,17 @@ This is a rolling release - changes are deployed continuously to `main`.
 
 ### Added
 
-- **ci-ansible-molecule-kvm.yml**: New reusable Molecule runner that boots full
-  VMs via the `molecule-qemu` driver instead of the docker driver, for roles
-  that need a real kernel and init system (k3s `modprobe`/cgroups, container
-  engines, agents that must run as a stable `systemd` service — under docker
-  the unit reports started while it has crash-looped, masking config bugs).
-  GitHub-hosted `ubuntu-latest` exposes a writable `/dev/kvm`, so the job
-  installs `qemu-system-x86`/`qemu-utils`/`genisoimage`, adds the runner to the
-  `kvm` group, and runs molecule via `sg kvm`; molecule-qemu auto-detects KVM
+- **ci-ansible-molecule.yml**: `driver` input (`docker` default, `qemu`) to
+  pick the Molecule driver. `qemu` boots full VMs via the `molecule-qemu`
+  driver for roles that need a real kernel and init system (k3s
+  `modprobe`/cgroups, container engines, agents that must run as a stable
+  `systemd` service — under docker the unit reports started while it has
+  crash-looped, masking config bugs). GitHub-hosted `ubuntu-latest` exposes a
+  writable `/dev/kvm`, so the job installs
+  `qemu-system-x86`/`qemu-utils`/`genisoimage`, adds the runner to the `kvm`
+  group, and runs molecule via `sg kvm`; molecule-qemu auto-detects KVM
   acceleration and falls back to TCG. Validated end-to-end on `arillso.agent`
-  (alloy) and `arillso.container` (k3s). Docker-driver roles keep using
-  `ci-ansible-molecule.yml`
+  (alloy) and `arillso.container` (k3s).
 - **AGENTS.md**: New "Ansible Collection Conventions" section documenting the
   shared release workflow shape (`name`, `run-name`, `concurrency`), the
   Keep-a-Changelog format, the cross-collection dependency-bound matrix

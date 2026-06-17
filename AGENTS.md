@@ -95,8 +95,7 @@ This repository provides shared Renovate presets for consumer repositories:
 | Workflow | File | Description |
 |----------|------|-------------|
 | Ansible Collection CI | [ci-ansible-collection.yml](./.github/workflows/ci-ansible-collection.yml) | Linting, security scan, sanity/unit/integration tests, build |
-| Ansible Molecule CI | [ci-ansible-molecule.yml](./.github/workflows/ci-ansible-molecule.yml) | Auto-discovered Molecule scenarios under `extensions/molecule/`, docker driver |
-| Ansible Molecule CI (KVM) | [ci-ansible-molecule-kvm.yml](./.github/workflows/ci-ansible-molecule-kvm.yml) | Molecule scenarios in full VMs via the `molecule-qemu` driver — for roles needing a real kernel/init (k3s, container engines, systemd-service agents) |
+| Ansible Molecule CI | [ci-ansible-molecule.yml](./.github/workflows/ci-ansible-molecule.yml) | Auto-discovered Molecule scenarios under `extensions/molecule/`; `driver` input selects `docker` (default) or `qemu` (full VMs via `molecule-qemu` for roles needing a real kernel/init — k3s, container engines, systemd-service agents) |
 | Go CI | [ci-go.yml](./.github/workflows/ci-go.yml) | golangci-lint, gofmt, go vet, go test |
 | Lint | [ci-lint.yml](./.github/workflows/ci-lint.yml) | MegaLinter aggregator |
 
