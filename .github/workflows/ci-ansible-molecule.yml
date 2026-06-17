@@ -193,10 +193,15 @@ jobs:
           # + qemu-utils are the molecule-qemu runtime dependencies.
           sudo apt-get install -y -qq \
             qemu-system-x86 qemu-utils genisoimage
-          # The runner user is not in the kvm group by default; add it and
-          # confirm acceleration is usable (falls back to TCG otherwise).
+          # The runner user is not in the kvm group by default; add it. Log
+          # whether acceleration is available without failing the step
+          # (molecule-qemu falls back to TCG when /dev/kvm is absent).
           sudo usermod -aG kvm "$USER"
-          test -e /dev/kvm && ls -l /dev/kvm
+          if [ -e /dev/kvm ]; then
+            ls -l /dev/kvm
+          else
+            echo "::warning::/dev/kvm absent — molecule-qemu will fall back to TCG"
+          fi
 
       - name: Install collection dev dependencies
         working-directory: ansible_collections/${{ inputs.collection_namespace }}/${{ inputs.collection_name }}
