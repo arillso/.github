@@ -239,13 +239,18 @@ jobs:
 - **`concurrency` with `cancel-in-progress: false`** so a release never aborts
   mid-publish.
 - **`run-name`** identifies the tag in the Actions list.
+- **Tags carry no `v` prefix** (`1.0.0`, not `v1.0.0`). The release workflow
+  derives the version as `${GITHUB_REF#refs/tags/}` and looks up `## [VERSION]`
+  in the CHANGELOG; a `v`-prefixed tag would not match the heading and the
+  workflow silently falls back to GitHub's generated release notes.
 
 ### CHANGELOG Format
 
 All collections use [Keep a Changelog](https://keepachangelog.com/) with SemVer
 headings (not the date-based rolling format this `.github` repo uses for itself).
 Bootstrap new collections from [templates/CHANGELOG.md](./templates/CHANGELOG.md).
-The release workflow extracts the matching `## [VERSION]` section as release notes.
+The release workflow extracts the matching `## [VERSION]` section as release notes
+— so the heading (`## [1.0.0]`) must match the un-prefixed tag name exactly.
 
 ### Cross-Collection Dependency Bounds
 
@@ -269,6 +274,13 @@ file. The shared [renovate-ansible](./renovate-ansible.json) preset keeps that
 file on a current released Python (custom manager, `python-version` datasource).
 A collection without `.python-version` is drift — add one. `requires_ansible` is
 `>=2.18.0` across the collections.
+
+**Release-path caveat**: `release-ansible-collection.yml` has its own
+`python_version` input (default `3.11`) and does **not** read `.python-version`.
+A collection that bumps `.python-version` must also pass the matching
+`python_version` to the reusable workflow, or the publish build keeps using the
+old default. (Follow-up: make the release workflow read `.python-version` when
+present so the file is truly authoritative.)
 
 ---
 
