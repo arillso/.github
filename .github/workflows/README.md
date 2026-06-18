@@ -72,6 +72,48 @@ jobs:
 
 ---
 
+#### `ci-ansible-molecule.yml`
+
+Runs Molecule scenarios for a collection's roles. The `driver` input selects the
+backend: `docker` (default, fast containers) or `qemu` (full VMs via
+`molecule-qemu`, for roles that need a real kernel and init system — k3s,
+container engines, agents that must run as a stable `systemd` service). The
+`qemu` driver works on the standard `ubuntu-latest` runner (it exposes
+`/dev/kvm`); a larger/paid runner is not required.
+
+**Usage:**
+
+```yaml
+jobs:
+  molecule:
+    uses: arillso/.github/.github/workflows/ci-ansible-molecule.yml@main
+    with:
+      collection_name: container
+      driver: qemu
+      scenarios_root: roles/k3s/molecule
+      scenarios: '["default"]'
+      concurrency-suffix: molecule-k3s
+```
+
+**Inputs:**
+
+- `collection_namespace` (optional): Collection namespace (default: `arillso`)
+- `collection_name` (required): Collection name
+- `driver` (optional): `docker` (default) or `qemu`
+- `python_version` (optional): Python version (default: `3.12`)
+- `scenarios` (optional): JSON array of scenario names; auto-discovered from `scenarios_root` when empty
+- `scenarios_root` (optional): Path to the scenarios directory (default: `extensions/molecule`)
+- `runs_on` (optional): Runner label (default: `ubuntu-latest`)
+- `cancel-in-progress` (optional): Cancel in-progress runs in the same group (default: `true`)
+- `concurrency-suffix` (optional): Suffix appended to the concurrency group; set per role to run several scenarios in parallel from one caller
+
+**Jobs:**
+
+- discover (build the scenario matrix)
+- molecule (one matrix leg per scenario; installs QEMU/KVM when `driver: qemu`)
+
+---
+
 ### Go & Actions
 
 #### `ci-go-action.yml`
