@@ -6,6 +6,14 @@ This is a rolling release - changes are deployed continuously to `main`.
 
 ---
 
+## 2026-06-18
+
+### Added
+
+- **workflows/README.md**: Document `ci-ansible-molecule.yml` (usage, inputs,
+  jobs, the `driver: docker|qemu` selector) — it was listed in the AGENTS.md
+  CI table but missing from the workflow reference.
+
 ## 2026-06-17
 
 ### Added
