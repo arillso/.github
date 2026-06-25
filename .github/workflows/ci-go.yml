@@ -65,7 +65,7 @@ jobs:
     if: ${{ inputs.enable_test }}
     steps:
       - name: Checkout Code
-        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
 
       - name: Setup Go (from file)
         if: ${{ inputs.go_version == 'file' }}
@@ -132,7 +132,7 @@ jobs:
     if: ${{ inputs.enable_golangci_lint }}
     steps:
       - name: Checkout Code
-        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
 
       - name: Setup Go (from file)
         if: ${{ inputs.go_version == 'file' }}
