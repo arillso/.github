@@ -19,14 +19,11 @@
 <!-- Link to the issue this PR addresses -->
 Fixes #(issue number)
 
-## Which Role(s) Are Affected?
+## Affected Component(s)
 
-<!-- Mark all that apply -->
+<!-- List the roles, packages, modules, or workflows this PR touches -->
 
-- [ ] Alloy (Grafana Alloy)
-- [ ] DO (DigitalOcean Agent)
-- [ ] Tailscale
-- [ ] Collection (general/multiple roles)
+-
 
 ## Changes Made
 
@@ -94,10 +91,3 @@ Fixes #(issue number)
 ## Breaking Changes
 
 <!-- If this PR introduces breaking changes, describe them here and provide migration notes -->
-
----
-
-<!--
-Thank you for contributing to arillso.agent!
-Generated with Claude Code - https://claude.com/claude-code
--->
