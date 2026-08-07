@@ -116,36 +116,89 @@ jobs:
 
 ### Go & Actions
 
-#### `ci-go-action.yml`
+#### `ci-go.yml`
 
-CI for Go projects and GitHub Actions with comprehensive linting.
+CI for Go projects: tests, golangci-lint and staticcheck.
 
 **Usage:**
 
 ```yaml
 jobs:
   ci:
-    uses: arillso/.github/.github/workflows/ci-go-action.yml@main
+    uses: arillso/.github/.github/workflows/ci-go.yml@main
+```
+
+**Inputs:**
+
+- `go_version` (optional): Go version, or `file` to read from go.mod (default: `file`)
+- `enable_test` (optional): Enable Go tests (default: `true`)
+- `enable_golangci_lint` (optional): Enable golangci-lint (default: `true`)
+- `enable_staticcheck` (optional): Enable staticcheck (default: `true`)
+- `cancel-in-progress` (optional): Cancel in-progress runs in the same concurrency group (default: `true`)
+- `concurrency-suffix` (optional): Suffix appended to the concurrency group as `-<suffix>` (default: empty)
+
+**Jobs:**
+
+- test
+- golangci-lint
+
+---
+
+#### `ci-lint.yml`
+
+Repository linting for workflows, shell scripts and YAML files.
+
+**Usage:**
+
+```yaml
+jobs:
+  lint:
+    uses: arillso/.github/.github/workflows/ci-lint.yml@main
     with:
       enable_shellcheck: true
 ```
 
 **Inputs:**
 
-- `go_version` (optional): Go version or `file` to read from go.mod (default: `file`)
-- `enable_golangci_lint` (optional): Enable golangci-lint (default: `true`)
 - `enable_actionlint` (optional): Enable actionlint (default: `true`)
 - `enable_shellcheck` (optional): Enable shellcheck (default: `false`)
 - `enable_yamllint` (optional): Enable yamllint (default: `true`)
-- `yamllint_config` (optional): Path to yamllint config (default: `.yamllint.yml`)
-- `yamllint_strict` (optional): Strict mode (default: `false`)
+- `yamllint_config` (optional): Path to yamllint config file (default: `.yamllint.yml`)
+- `yamllint_strict` (optional): Run yamllint in strict mode (default: `false`)
 
 **Jobs:**
 
-- golangci-lint
 - actionlint
-- shellcheck (optional)
+- shellcheck
 - yamllint
+
+---
+
+#### `release-go.yml`
+
+Release Go projects with GoReleaser.
+
+**Usage:**
+
+```yaml
+jobs:
+  release:
+    uses: arillso/.github/.github/workflows/release-go.yml@main
+```
+
+**Inputs:**
+
+- `go-version` (optional): Go version to use (default: `1.25`)
+- `goreleaser-version` (optional): GoReleaser version (default: `~> v2`)
+- `goreleaser-args` (optional): GoReleaser arguments (default: `release --clean`)
+- `working-directory` (optional): Working directory (default: `.`)
+- `extra-env` (optional): Additional environment variables (multiline, `KEY=VALUE` format)
+- `cancel-in-progress` (optional): Cancel in-progress runs in the same concurrency group (default: `false`)
+- `concurrency-suffix` (optional): Suffix appended to the concurrency group as `-<suffix>` (default: empty)
+
+**Jobs:**
+
+- goreleaser
 
 ---
 
@@ -206,6 +259,109 @@ jobs:
 - `build_docker_image` (optional): Build Docker image before scan (default: `false`)
 - `dockerfile_path` (optional): Dockerfile path (default: `Dockerfile`)
 - `image_name` (optional): Image name to build (default: `trivy-scan-image`)
+
+---
+
+#### `security-code.yml`
+
+CodeQL code scanning across multiple languages with configurable query suites.
+
+**Usage:**
+
+```yaml
+jobs:
+  code:
+    uses: arillso/.github/.github/workflows/security-code.yml@main
+    with:
+      languages: '["go"]'
+```
+
+**Inputs:**
+
+- `languages` (optional): Languages to analyze as a JSON array (default: `["javascript-typescript"]`)
+- `queries` (optional): Query suites to run (default: `security-extended,security-and-quality`)
+- `node-version-file` (optional): Node version file for JS/TS projects (default: `.nvmrc`)
+- `go-version` (optional): Go version for Go projects (default: `1.25`)
+- `python-version` (optional): Python version for Python projects (default: `3.12`)
+- `package-manager` (optional): Package manager override (npm, pnpm, yarn); auto-detected from lock files if empty
+- `build-command` (optional): Custom build command; autobuild if empty
+- `paths-ignore` (optional): Comma-separated list of paths to ignore (default: `node_modules,dist,coverage,**/*.spec.ts,**/*.test.ts`)
+- `enable-sarif-upload` (optional): Upload SARIF results to the GitHub Security tab, requires a public repo or GHAS (default: `true`)
+- `cancel-in-progress` (optional): Cancel in-progress runs in the same concurrency group (default: `true`)
+- `concurrency-suffix` (optional): Suffix appended to the concurrency group as `-<suffix>` (default: empty)
+
+**Jobs:**
+
+- analyze (matrix over `languages`)
+
+---
+
+#### `security-config.yml`
+
+Security scanning for infrastructure-as-code: a Trivy config scan always runs, plus opt-in scans for Terraform, Kubernetes manifests and Ansible playbooks.
+
+**Usage:**
+
+```yaml
+jobs:
+  config:
+    uses: arillso/.github/.github/workflows/security-config.yml@main
+    with:
+      scan-ansible: true
+```
+
+**Inputs:**
+
+- `scan-terraform` (optional): Scan Terraform files (default: `false`)
+- `scan-kubernetes` (optional): Scan Kubernetes manifests (default: `false`)
+- `scan-ansible` (optional): Scan Ansible playbooks (default: `false`)
+- `terraform-path` (optional): Path to Terraform files (default: `.`)
+- `kubernetes-path` (optional): Path to Kubernetes manifests (default: `.`)
+- `ansible-path` (optional): Path to Ansible playbooks (default: `.`)
+- `severity-threshold` (optional): Minimum severity — LOW, MEDIUM, HIGH, CRITICAL (default: `MEDIUM`)
+- `fail-on-findings` (optional): Fail the workflow on security findings (default: `false`)
+- `enable-sarif` (optional): Upload SARIF results to GitHub Security (default: `true`)
+- `cancel-in-progress` (optional): Cancel in-progress runs in the same concurrency group (default: `true`)
+- `concurrency-suffix` (optional): Suffix appended to the concurrency group as `-<suffix>` (default: empty)
+
+**Jobs:**
+
+- trivy-config-scan
+- terraform-security
+- kubernetes-security
+- ansible-security
+- security-report
+
+---
+
+#### `security-sbom.yml`
+
+Generate a software bill of materials for containers, filesystems or Go binaries.
+
+**Usage:**
+
+```yaml
+jobs:
+  sbom:
+    uses: arillso/.github/.github/workflows/security-sbom.yml@main
+    with:
+      artifact-type: container
+      artifact-ref: arillso/ansible:latest
+```
+
+**Inputs:**
+
+- `artifact-type` (required): Artifact type — container, filesystem, go-binary
+- `artifact-ref` (required): Artifact reference — image name, directory path or binary path
+- `working-directory` (optional): Working directory (default: `.`)
+- `sbom-format` (optional): SBOM format — cyclonedx-json, spdx-json, syft-json (default: `cyclonedx-json`)
+- `cancel-in-progress` (optional): Cancel in-progress runs in the same concurrency group (default: `true`)
+- `concurrency-suffix` (optional): Suffix appended to the concurrency group as `-<suffix>` (default: empty)
+
+**Jobs:**
+
+- generate-sbom
+- sbom-report
 
 ---
 
@@ -384,6 +540,24 @@ jobs:
 **Secrets:**
 
 - `CLAUDE_CODE_OAUTH_TOKEN` (required): Claude Code OAuth token
+
+---
+
+## This Repository's Own CI
+
+The `self-*` workflows are **not reusable** — they have no `workflow_call`
+trigger and cannot be called from another repository. They run this
+repository's own CI by invoking the reusables above through a local `./` path,
+so the workflows consumers depend on are exercised here before they ship.
+
+| Workflow | Trigger | Purpose |
+|----------|---------|---------|
+| `self-pull-request.yml` | `pull_request` | Calls `ci-lint.yml`, `ai-claude-review.yml` and `security-code.yml` |
+| `self-merge.yml` | `push` to `main` | Moves the `YYYY-MM-DD` date tag to the newest commit, forward-only |
+| `self-weekly-security.yml` | Monday 02:00 UTC | Calls `security-config.yml` and `security-secrets.yml` |
+
+Consumer repositories pin these date tags (`@2026-08-07`), so `self-merge.yml`
+is what makes a merged change reachable — see [General Usage](#general-usage).
 
 ---
 
