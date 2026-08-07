@@ -74,13 +74,13 @@
       "pinDigests": false
     },
     {
-      "description": "arillso/.github - date tags, no digest pinning, immediate merge",
+      "description": "arillso/.github - date tags cannot carry a digest, so pinDigests is off. Without a digest, a moved or compromised tag would propagate org-wide, and this repo's reusable workflows run with contents/packages/security-events write permissions. Automerge is therefore disabled: every change to our own CI provider requires a human review step.",
       "matchDepNames": ["arillso/.github"],
       "pinDigests": false,
       "versioning": "regex:^(?<major>\\d{4})-(?<minor>\\d{2})-(?<patch>\\d{2})$",
       "allowedVersions": "/^\\d{4}-\\d{2}-\\d{2}$/",
       "minimumReleaseAge": "1 day",
-      "automerge": true
+      "automerge": false
     }
   ],
   "lockFileMaintenance": {
