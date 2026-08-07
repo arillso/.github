@@ -196,6 +196,10 @@ jobs:
 - `cancel-in-progress` (optional): Cancel in-progress runs in the same concurrency group (default: `false`)
 - `concurrency-suffix` (optional): Suffix appended to the concurrency group as `-<suffix>` (default: empty)
 
+**Jobs:**
+
+- goreleaser
+
 ---
 
 ### Security
@@ -285,6 +289,10 @@ jobs:
 - `enable-sarif-upload` (optional): Upload SARIF results to the GitHub Security tab, requires a public repo or GHAS (default: `true`)
 - `cancel-in-progress` (optional): Cancel in-progress runs in the same concurrency group (default: `true`)
 - `concurrency-suffix` (optional): Suffix appended to the concurrency group as `-<suffix>` (default: empty)
+
+**Jobs:**
+
+- analyze (matrix over `languages`)
 
 ---
 
@@ -532,6 +540,24 @@ jobs:
 **Secrets:**
 
 - `CLAUDE_CODE_OAUTH_TOKEN` (required): Claude Code OAuth token
+
+---
+
+## This Repository's Own CI
+
+The `self-*` workflows are **not reusable** — they have no `workflow_call`
+trigger and cannot be called from another repository. They run this
+repository's own CI by invoking the reusables above through a local `./` path,
+so the workflows consumers depend on are exercised here before they ship.
+
+| Workflow | Trigger | Purpose |
+|----------|---------|---------|
+| `self-pull-request.yml` | `pull_request` | Calls `ci-lint.yml`, `ai-claude-review.yml` and `security-code.yml` |
+| `self-merge.yml` | `push` to `main` | Moves the `YYYY-MM-DD` date tag to the newest commit, forward-only |
+| `self-weekly-security.yml` | Monday 02:00 UTC | Calls `security-config.yml` and `security-secrets.yml` |
+
+Consumer repositories pin these date tags (`@2026-08-07`), so `self-merge.yml`
+is what makes a merged change reachable — see [General Usage](#general-usage).
 
 ---
 
