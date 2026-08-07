@@ -16,6 +16,11 @@ This is a rolling release - changes are deployed continuously to `main`.
   substitution executed on the runner with `security-events: write`. They now
   travel through `env:` and are read as shell variables; the summary heredoc is
   replaced by `printf`.
+- **ai-claude-review.yml**: Read `REVIEW.md`, `AGENTS.md` and `CLAUDE.md` from
+  the base ref instead of the PR's own checkout. A PR that changed these files
+  rewrote the instructions of the agent reviewing it, while that agent holds
+  `gh pr review --approve`. A second sparse `actions/checkout` provides them
+  under `.review-base/`, and the prompt now reads only from there.
 
 ### Changed
 
