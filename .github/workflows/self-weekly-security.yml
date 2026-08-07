@@ -1,0 +1,30 @@
+---
+name: Weekly Security
+
+on:
+  schedule:
+    - cron: '0 2 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}
+  cancel-in-progress: false
+
+jobs:
+  config:
+    name: Config Security
+    permissions:
+      contents: read
+      security-events: write
+      actions: read
+    uses: ./.github/workflows/security-config.yml
+
+  secrets:
+    name: Secret Scanning
+    permissions:
+      contents: read
+      actions: read
+    uses: ./.github/workflows/security-secrets.yml
