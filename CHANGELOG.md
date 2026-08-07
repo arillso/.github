@@ -6,6 +6,38 @@ This is a rolling release - changes are deployed continuously to `main`.
 
 ---
 
+## 2026-08-07
+
+### Fixed
+
+- **workflows/security-code.yml**: Caller inputs (`paths-ignore`,
+  `package-manager`, `build-command`) and the step summary values were expanded
+  by the workflow parser into `run:` bodies, so a value carrying a command
+  substitution executed on the runner with `security-events: write`. They now
+  travel through `env:` and are read as shell variables; the summary heredoc is
+  replaced by `printf`.
+
+### Changed
+
+- **workflows/security-code.yml**: `package-manager` is restricted to
+  `npm | pnpm | yarn`. Its value leaves the step through `$GITHUB_OUTPUT` and is
+  interpolated into a second `run:` body, so an unconstrained string would
+  execute there. Any other non-empty value now fails the step; lock-file
+  detection is unchanged when the input is empty.
+
+### Removed
+
+- **workflows/release-go.yml**: The `pre-build-commands` input is removed. It
+  was expanded into a `run:` body in the job holding `contents: write`,
+  `packages: write` and `GITHUB_TOKEN`, and no caller sets it.
+
+### Migration notes
+
+- Breaking: callers that passed `pre-build-commands` to `release-go.yml` must run
+  those commands in their own job before calling the workflow.
+- Callers passing a `package-manager` other than `npm`, `pnpm` or `yarn` to
+  `security-code.yml` will now see the run fail instead of the value being used.
+
 ## 2026-06-18
 
 ### Added
