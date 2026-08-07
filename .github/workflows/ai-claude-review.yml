@@ -2,8 +2,6 @@
 name: AI - Code Review
 
 on:
-  pull_request:
-    types: [opened, synchronize, ready_for_review, reopened]
   workflow_call:
     inputs:
       cancel-in-progress:
@@ -27,16 +25,14 @@ on:
     secrets:
       CLAUDE_CODE_OAUTH_TOKEN:
         required: true
-        # Note: for pull_request trigger, secrets.CLAUDE_CODE_OAUTH_TOKEN resolves
-        # directly from the repo's secrets context — no caller needed.
 
 permissions:
   contents: read
 
 concurrency:
-  # Dual-trigger workflow: `inputs.*` is undefined on `pull_request:` and
-  # only populated under `workflow_call:`. Expressions below fall back to
-  # the original hardcoded behaviour when inputs are missing.
+  # `github.event.pull_request.number` is the caller's event context, so it is
+  # set whenever the calling workflow runs on `pull_request`; `github.run_id`
+  # keeps the group unique for any other calling event.
   group: >-
     claude-review-${{ github.event.pull_request.number || github.run_id }}${{
       inputs.concurrency-suffix && format('-{0}', inputs.concurrency-suffix) || ''

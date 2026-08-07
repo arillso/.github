@@ -8,6 +8,29 @@ This is a rolling release - changes are deployed continuously to `main`.
 
 ## 2026-08-07
 
+### Added
+
+- **self-pull-request.yml**, **self-merge.yml**, **self-weekly-security.yml**:
+  This repository now runs its own CI, mirroring `sbaerlocher/.github`. Until
+  now every workflow here was `workflow_call`-only and nothing verified the
+  repository itself. Each new workflow calls this repo's own reusables through
+  a local `./` path, so the workflows consumers depend on are exercised before
+  they ship.
+- **self-merge.yml**: Moves the `YYYY-MM-DD` date tag to the newest commit on
+  `main`, forward-only and serialised via `concurrency: date-tag`. Tagging was
+  manual before; the newest tag was `2026-06-18`, which is exactly what the
+  consumer repositories pin — so fixes merged after that date never reached
+  them without a hand-cut tag.
+
+### Changed
+
+- **ai-claude-review.yml**: Dropped the `pull_request:` trigger; the workflow is
+  now `workflow_call`-only like every other reusable here, and
+  `self-pull-request.yml` invokes it. Note that this does not change the
+  `claude-code-action` workflow-validation guard: it checks every workflow file
+  taking part in a run against the default branch, so a PR modifying this file
+  still has its review skipped regardless of where the trigger lives.
+
 ### Fixed
 
 - **workflows/security-code.yml**: Caller inputs (`paths-ignore`,
