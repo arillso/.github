@@ -24,6 +24,14 @@ This is a rolling release - changes are deployed continuously to `main`.
   interpolated into a second `run:` body, so an unconstrained string would
   execute there. Any other non-empty value now fails the step; lock-file
   detection is unchanged when the input is empty.
+- **pull_request_template.md**, **templates/pull_request_template.md**:
+  Generalize the org-wide PR template. The fixed role checklist (Alloy, DO,
+  Tailscale) came from `ansible.agent` and was meaningless in every other
+  repository the template applies to — it is now a free-form
+  `## Affected Component(s)` list. Removed the trailing comment block, which
+  thanked contributors for the wrong repository and carried an attribution
+  line the commit conventions forbid; every PR in the organization inherited
+  both.
 
 ### Removed
 
