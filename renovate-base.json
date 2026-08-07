@@ -74,8 +74,10 @@
       "pinDigests": false
     },
     {
-      "description": "arillso/.github - date tags cannot carry a digest, so pinDigests is off. Without a digest, a moved or compromised tag would propagate org-wide, and this repo's reusable workflows run with contents/packages/security-events write permissions. Automerge is therefore disabled: every change to our own CI provider requires a human review step.",
+      "description": "arillso/.github - date tags cannot carry a digest, so pinDigests is off. Without a digest, a moved or compromised tag would propagate org-wide, and this repo's reusable workflows run with contents/packages/security-events write permissions. Automerge is therefore disabled: every change to our own CI provider requires a human review step. It also gets its own group, so it does not inherit the shared non-major group and block automerge for that whole batch.",
       "matchDepNames": ["arillso/.github"],
+      "groupName": "arillso/.github",
+      "groupSlug": "arillso-github",
       "pinDigests": false,
       "versioning": "regex:^(?<major>\\d{4})-(?<minor>\\d{2})-(?<patch>\\d{2})$",
       "allowedVersions": "/^\\d{4}-\\d{2}-\\d{2}$/",
