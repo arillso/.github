@@ -112,6 +112,22 @@ jobs:
 - discover (build the scenario matrix)
 - molecule (one matrix leg per scenario; installs QEMU/KVM when `driver: qemu`)
 
+**Reading a failed run:**
+
+Raw job logs are served from a blob endpoint that the GitHub API cannot always
+reach, so a failed scenario also publishes its output through two surfaces that
+the API does serve:
+
+- The job summary carries the last 200 lines in a collapsed block — enough for
+  the usual case, where the failed task and its `fatal:` block sit at the end.
+- The full log is uploaded as an artifact named
+  `molecule-log-<driver>-<scenario>`, kept for 7 days. Use it when the failure
+  is further up (a converge that dies mid-run, a timeout):
+
+  ```bash
+  gh run download <run-id> --name molecule-log-qemu-default
+  ```
+
 ---
 
 ### Go & Actions

@@ -234,15 +234,25 @@ jobs:
           SCENARIO: ${{ matrix.scenario }}
           SCENARIOS_ROOT: ${{ inputs.scenarios_root }}
         run: |
+          # `pipefail` keeps the molecule exit code from being masked by `tee`;
+          # without it every red run would report green.
+          set -euo pipefail
+          # The job log lives behind a blob URL that the GitHub API cannot serve,
+          # so the output is also captured to a file that feeds the job summary
+          # and an artifact. Absolute path: this step and its successors run in
+          # different working directories.
+          LOG="$RUNNER_TEMP/molecule-${DRIVER}-${SCENARIO}.log"
+          echo "MOLECULE_LOG=$LOG" >> "$GITHUB_ENV"
           # Molecule resolves scenarios relative to the cwd that contains
           # `molecule/`. SCENARIOS_ROOT is the parent of that directory
           # (e.g. `extensions/molecule` -> cd `extensions/`).
           cd "$(dirname "$SCENARIOS_ROOT")"
+          # `2>&1` first: molecule writes the failure text to stderr.
           if [ "$DRIVER" = "qemu" ]; then
             # `sg kvm` activates the freshly added group membership for this command.
-            sg kvm -c "molecule test -s '$SCENARIO'"
+            sg kvm -c "molecule test -s '$SCENARIO'" 2>&1 | tee "$LOG"
           else
-            molecule test -s "$SCENARIO"
+            molecule test -s "$SCENARIO" 2>&1 | tee "$LOG"
           fi
 
       - name: Summarise scenario outcome
@@ -257,3 +267,28 @@ jobs:
             echo
             echo "**Status:** $STATUS"
           } >> "$GITHUB_STEP_SUMMARY"
+          # `MOLECULE_LOG` may be unset: this step runs `if: always()`, so the
+          # previous one can have died before writing it to `$GITHUB_ENV`.
+          # `-s` rather than `-f` keeps an empty file from producing an empty
+          # disclosure block.
+          if [ -s "${MOLECULE_LOG:-}" ]; then
+            {
+              echo
+              echo '<details><summary>Last 200 log lines</summary>'
+              echo
+              echo '```'
+              tail -n 200 "$MOLECULE_LOG"
+              echo '```'
+              echo
+              echo '</details>'
+            } >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+      - name: Upload molecule log
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: molecule-log-${{ inputs.driver }}-${{ matrix.scenario }}
+          path: ${{ env.MOLECULE_LOG }}
+          retention-days: 7
+          if-no-files-found: ignore
