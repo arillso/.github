@@ -2,45 +2,45 @@
 name: Security - CodeQL
 
 on:
-  workflow_call:
-    inputs:
-      language:
-        description: 'Language to analyze (go, javascript, python, etc.)'
-        required: false
-        type: string
-        default: 'go'
-      cron_schedule:
-        description: 'Cron schedule for periodic scans'
-        required: false
-        type: string
-        default: '0 6 * * 1'
+    workflow_call:
+        inputs:
+            language:
+              description: 'Language to analyze (go, javascript, python, etc.)'
+              required: false
+              type: string
+              default: 'go'
+            cron_schedule:
+              description: 'Cron schedule for periodic scans'
+              required: false
+              type: string
+              default: '0 6 * * 1'
 
 permissions:
-  contents: read
-  security-events: write
+    contents: read
+    security-events: write
 
 jobs:
-  analyze:
-    name: Analyze
-    runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        language: ['${{ inputs.language }}']
+    analyze:
+        name: Analyze
+        runs-on: ubuntu-latest
+        strategy:
+            fail-fast: false
+            matrix:
+              language: ['${{ inputs.language }}']
 
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        steps:
+            - name: Checkout repository
+              uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
 
-      - name: Initialize CodeQL
-        uses: github/codeql-action/init@5595ccaf912efad79be6eef63a5619ff05969be3 # v4
-        with:
-          languages: ${{ matrix.language }}
+            - name: Initialize CodeQL
+              uses: github/codeql-action/init@5595ccaf912efad79be6eef63a5619ff05969be3 # v4
+              with:
+                  languages: ${{ matrix.language }}
 
-      - name: Autobuild
-        uses: github/codeql-action/autobuild@5595ccaf912efad79be6eef63a5619ff05969be3 # v4
+            - name: Autobuild
+              uses: github/codeql-action/autobuild@5595ccaf912efad79be6eef63a5619ff05969be3 # v4
 
-      - name: Perform CodeQL Analysis
-        uses: github/codeql-action/analyze@5595ccaf912efad79be6eef63a5619ff05969be3 # v4
-        with:
-          category: "/language:${{ matrix.language }}"
+            - name: Perform CodeQL Analysis
+              uses: github/codeql-action/analyze@5595ccaf912efad79be6eef63a5619ff05969be3 # v4
+              with:
+                  category: "/language:${{ matrix.language }}"

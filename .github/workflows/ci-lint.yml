@@ -2,81 +2,81 @@
 name: CI - Lint
 
 on:
-  workflow_call:
-    inputs:
-      enable_actionlint:
-        description: 'Enable actionlint'
-        required: false
-        type: boolean
-        default: true
-      enable_shellcheck:
-        description: 'Enable shellcheck'
-        required: false
-        type: boolean
-        default: false
-      enable_yamllint:
-        description: 'Enable yamllint'
-        required: false
-        type: boolean
-        default: true
-      yamllint_config:
-        description: 'Path to yamllint config file'
-        required: false
-        type: string
-        default: '.yamllint.yml'
-      yamllint_strict:
-        description: 'Run yamllint in strict mode'
-        required: false
-        type: boolean
-        default: false
+    workflow_call:
+        inputs:
+            enable_actionlint:
+              description: 'Enable actionlint'
+              required: false
+              type: boolean
+              default: true
+            enable_shellcheck:
+              description: 'Enable shellcheck'
+              required: false
+              type: boolean
+              default: false
+            enable_yamllint:
+              description: 'Enable yamllint'
+              required: false
+              type: boolean
+              default: true
+            yamllint_config:
+              description: 'Path to yamllint config file'
+              required: false
+              type: string
+              default: '.yamllint.yml'
+            yamllint_strict:
+              description: 'Run yamllint in strict mode'
+              required: false
+              type: boolean
+              default: false
 
 permissions:
-  contents: read
+    contents: read
 
 jobs:
-  actionlint:
-    name: Action Lint
-    runs-on: ubuntu-latest
-    if: ${{ inputs.enable_actionlint }}
-    steps:
-      - name: Checkout Code
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+    actionlint:
+        name: Action Lint
+        runs-on: ubuntu-latest
+        if: ${{ inputs.enable_actionlint }}
+        steps:
+            - name: Checkout Code
+              uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
 
-      - name: Run actionlint
-        uses: reviewdog/action-actionlint@50842263c20a7c46bd0065b9e624d3c569db061e # v1
-        with:
-          reporter: github-pr-review
-          fail_level: error
+            - name: Run actionlint
+              uses: reviewdog/action-actionlint@50842263c20a7c46bd0065b9e624d3c569db061e # v1
+              with:
+                  reporter: github-pr-review
+                  fail_level: error
 
-  shellcheck:
-    name: Shell Check
-    runs-on: ubuntu-latest
-    if: ${{ inputs.enable_shellcheck }}
-    steps:
-      - name: Checkout Code
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+    shellcheck:
+        name: Shell Check
+        runs-on: ubuntu-latest
+        if: ${{ inputs.enable_shellcheck }}
+        steps:
+            - name: Checkout Code
+              uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
 
-      - name: Run shellcheck
-        uses: reviewdog/action-shellcheck@4c07458293ac342d477251099501a718ae5ef86e # v1
-        with:
-          reporter: github-pr-review
-          fail_level: error
+            - name: Run shellcheck
+              uses: reviewdog/action-shellcheck@4c07458293ac342d477251099501a718ae5ef86e # v1
+              with:
+                  reporter: github-pr-review
+                  fail_level: error
 
-  yamllint:
-    name: YAML Lint
-    runs-on: ubuntu-latest
-    if: ${{ inputs.enable_yamllint }}
-    steps:
-      - name: Checkout Code
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+    yamllint:
+        name: YAML Lint
+        runs-on: ubuntu-latest
+        if: ${{ inputs.enable_yamllint }}
+        steps:
+            - name: Checkout Code
+              uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
 
-      - name: Install yamllint
-        run: pip install yamllint
+            - name: Install yamllint
+              run: pip install yamllint
 
-      - name: Run yamllint
-        run: |
-          ARGS=""
-          if [ "${{ inputs.yamllint_strict }}" == "true" ]; then
-            ARGS="--strict"
-          fi
-          yamllint -c ${{ inputs.yamllint_config }} $ARGS .
+            - name: Run yamllint
+              run: |
+                ARGS=""
+                if [ "${{ inputs.yamllint_strict }}" == "true" ]; then
+                  ARGS="--strict"
+                fi
+                yamllint -c ${{ inputs.yamllint_config }} $ARGS .

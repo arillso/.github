@@ -1,129 +1,179 @@
 {
-  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
-  "description": "Base Renovate configuration for Arillso repositories",
-  "extends": ["config:best-practices", ":dependencyDashboard", ":semanticCommitTypeAll(chore)"],
-  "schedule": ["before 6am"],
-  "timezone": "Europe/Zurich",
-  "labels": ["dependencies"],
-  "assigneesFromCodeOwners": true,
-  "reviewersFromCodeOwners": true,
-  "prConcurrentLimit": 5,
-  "prHourlyLimit": 4,
-  "osvVulnerabilityAlerts": true,
-  "platformAutomerge": true,
-  "automergeType": "pr",
-  "automergeStrategy": "squash",
-  "rebaseWhen": "behind-base-branch",
-  "semanticCommits": "enabled",
-  "separateMinorPatch": false,
-  "separateMajorMinor": true,
-  "separateMultipleMajor": true,
-  "rangeStrategy": "bump",
-  "minimumReleaseAge": "3 days",
-  "configMigration": true,
-  "postUpdateOptions": ["gomodTidy", "npmDedupe", "pnpmDedupe"],
-  "commitMessageAction": "Update",
-  "commitMessagePrefix": "chore(deps): ",
-  "commitMessageTopic": "{{depName}}",
-  "commitMessageExtra": "to {{#if isPinDigest}}{{{newDigestShort}}}{{else}}{{#if isMajor}}{{prettyNewMajor}}{{else}}{{#if isSingleVersion}}{{prettyNewVersion}}{{else}}{{#if newValue}}{{{newValue}}}{{else}}{{{newDigestShort}}}{{/if}}{{/if}}{{/if}}{{/if}}",
-  "dependencyDashboardTitle": "Dependency Dashboard",
-  "dependencyDashboardLabels": ["dependencies", "renovate"],
-  "dependencyDashboardFooter": "Managed by Renovate Bot - [Documentation](https://docs.renovatebot.com/)",
-  "packageRules": [
-    {
-      "description": "Automerge all non-major updates",
-      "matchUpdateTypes": ["minor", "patch", "pin", "digest"],
-      "groupName": "all non-major dependencies",
-      "groupSlug": "all-non-major",
-      "automerge": true
+    "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+    "description": "Base Renovate configuration for Arillso repositories",
+    "extends": [
+        "config:best-practices",
+        ":dependencyDashboard",
+        ":semanticCommitTypeAll(chore)"
+    ],
+    "schedule": [
+        "before 6am"
+    ],
+    "timezone": "Europe/Zurich",
+    "labels": [
+        "dependencies"
+    ],
+    "assigneesFromCodeOwners": true,
+    "reviewersFromCodeOwners": true,
+    "prConcurrentLimit": 5,
+    "prHourlyLimit": 4,
+    "osvVulnerabilityAlerts": true,
+    "platformAutomerge": true,
+    "automergeType": "pr",
+    "automergeStrategy": "squash",
+    "rebaseWhen": "behind-base-branch",
+    "semanticCommits": "enabled",
+    "separateMinorPatch": false,
+    "separateMajorMinor": true,
+    "separateMultipleMajor": true,
+    "rangeStrategy": "bump",
+    "minimumReleaseAge": "3 days",
+    "configMigration": true,
+    "postUpdateOptions": [
+        "gomodTidy",
+        "npmDedupe",
+        "pnpmDedupe"
+    ],
+    "commitMessageAction": "Update",
+    "commitMessagePrefix": "chore(deps): ",
+    "commitMessageTopic": "{{depName}}",
+    "commitMessageExtra": "to {{#if isPinDigest}}{{{newDigestShort}}}{{else}}{{#if isMajor}}{{prettyNewMajor}}{{else}}{{#if isSingleVersion}}{{prettyNewVersion}}{{else}}{{#if newValue}}{{{newValue}}}{{else}}{{{newDigestShort}}}{{/if}}{{/if}}{{/if}}{{/if}}",
+    "dependencyDashboardTitle": "Dependency Dashboard",
+    "dependencyDashboardLabels": [
+        "dependencies",
+        "renovate"
+    ],
+    "dependencyDashboardFooter": "Managed by Renovate Bot - [Documentation](https://docs.renovatebot.com/)",
+    "packageRules": [
+        {
+            "description": "Automerge all non-major updates",
+            "matchUpdateTypes": [
+                "minor",
+                "patch",
+                "pin",
+                "digest"
+            ],
+            "groupName": "all non-major dependencies",
+            "groupSlug": "all-non-major",
+            "automerge": true
+        },
+        {
+            "description": "Major updates require manual review",
+            "matchUpdateTypes": [
+                "major"
+            ],
+            "automerge": false,
+            "labels": [
+                "dependencies",
+                "major-update"
+            ],
+            "prPriority": 10,
+            "minimumReleaseAge": "7 days"
+        },
+        {
+            "description": "Pre-1.0 packages: SemVer does not guarantee backward compatibility; treat any non-patch bump as potentially breaking and require manual review.",
+            "matchCurrentVersion": "/^0\\./",
+            "matchUpdateTypes": [
+                "major",
+                "minor"
+            ],
+            "automerge": false
+        },
+        {
+            "description": "GitHub Actions - pin digests & automerge",
+            "matchManagers": [
+                "github-actions"
+            ],
+            "groupName": "GitHub Actions",
+            "pinDigests": true,
+            "automerge": true,
+            "semanticCommitType": "ci",
+            "semanticCommitScope": "actions"
+        },
+        {
+            "description": "Release binaries installed via helper actions (e.g. jaxxstorm/action-install-gh-release, aquasecurity/setup-trivy) are pinned by release tag, not by digest. Forcing pinDigests here makes Renovate fail with 'update failure' (Digest is not updated), so disable it for these uses-with inputs.",
+            "matchManagers": [
+                "github-actions"
+            ],
+            "matchDepTypes": [
+                "uses-with"
+            ],
+            "matchDatasources": [
+                "github-releases"
+            ],
+            "pinDigests": false
+        },
+        {
+            "description": "Docker images referenced as a bare version string (no @sha256 slot), e.g. kubesec/kubesec via an env var, cannot carry a digest. Forcing pinDigests makes Renovate fail with 'update failure' (Digest is not updated), so disable it for these.",
+            "matchDatasources": [
+                "docker"
+            ],
+            "matchDepNames": [
+                "kubesec/kubesec"
+            ],
+            "pinDigests": false
+        },
+        {
+            "description": "arillso/.github - date tags, no digest pinning, immediate merge",
+            "matchDepNames": [
+                "arillso/.github"
+            ],
+            "pinDigests": false,
+            "versioning": "regex:^(?<major>\\d{4})-(?<minor>\\d{2})-(?<patch>\\d{2})$",
+            "allowedVersions": "/^\\d{4}-\\d{2}-\\d{2}$/",
+            "minimumReleaseAge": "1 day",
+            "automerge": true
+        }
+    ],
+    "lockFileMaintenance": {
+        "enabled": false
     },
-    {
-      "description": "Major updates require manual review",
-      "matchUpdateTypes": ["major"],
-      "automerge": false,
-      "labels": ["dependencies", "major-update"],
-      "prPriority": 10,
-      "minimumReleaseAge": "7 days"
+    "vulnerabilityAlerts": {
+        "enabled": true,
+        "labels": [
+            "dependencies",
+            "security",
+            "priority-high"
+        ],
+        "automerge": true,
+        "schedule": [
+            "at any time"
+        ],
+        "minimumReleaseAge": null,
+        "semanticCommitType": "fix",
+        "semanticCommitScope": "security"
     },
-    {
-      "description": "Pre-1.0 packages: SemVer does not guarantee backward compatibility; treat any non-patch bump as potentially breaking and require manual review.",
-      "matchCurrentVersion": "/^0\\./",
-      "matchUpdateTypes": ["major", "minor"],
-      "automerge": false
-    },
-    {
-      "description": "GitHub Actions - pin digests & automerge",
-      "matchManagers": ["github-actions"],
-      "groupName": "GitHub Actions",
-      "pinDigests": true,
-      "automerge": true,
-      "semanticCommitType": "ci",
-      "semanticCommitScope": "actions"
-    },
-    {
-      "description": "Release binaries installed via helper actions (e.g. jaxxstorm/action-install-gh-release, aquasecurity/setup-trivy) are pinned by release tag, not by digest. Forcing pinDigests here makes Renovate fail with 'update failure' (Digest is not updated), so disable it for these uses-with inputs.",
-      "matchManagers": ["github-actions"],
-      "matchDepTypes": ["uses-with"],
-      "matchDatasources": ["github-releases"],
-      "pinDigests": false
-    },
-    {
-      "description": "Docker images referenced as a bare version string (no @sha256 slot), e.g. kubesec/kubesec via an env var, cannot carry a digest. Forcing pinDigests makes Renovate fail with 'update failure' (Digest is not updated), so disable it for these.",
-      "matchDatasources": ["docker"],
-      "matchDepNames": ["kubesec/kubesec"],
-      "pinDigests": false
-    },
-    {
-      "description": "arillso/.github - date tags, no digest pinning, immediate merge",
-      "matchDepNames": ["arillso/.github"],
-      "pinDigests": false,
-      "versioning": "regex:^(?<major>\\d{4})-(?<minor>\\d{2})-(?<patch>\\d{2})$",
-      "allowedVersions": "/^\\d{4}-\\d{2}-\\d{2}$/",
-      "minimumReleaseAge": "1 day",
-      "automerge": true
-    }
-  ],
-  "lockFileMaintenance": {
-    "enabled": false
-  },
-  "vulnerabilityAlerts": {
-    "enabled": true,
-    "labels": ["dependencies", "security", "priority-high"],
-    "automerge": true,
-    "schedule": ["at any time"],
-    "minimumReleaseAge": null,
-    "semanticCommitType": "fix",
-    "semanticCommitScope": "security"
-  },
-  "customManagers": [
-    {
-      "customType": "regex",
-      "description": "Update versions in comments (renovate: datasource=... depName=...). An optional @sha256:... suffix is captured separately as currentDigest, so digest-pinned image references (e.g. image: repo:tag@sha256:...) update the digest instead of mangling the whole string into currentValue.",
-      "managerFilePatterns": [
-        "/\\.ya?ml$/",
-        "/\\.json$/",
-        "/\\.toml$/",
-        "/Makefile$/",
-        "/\\.mk$/",
-        "/Dockerfile$/"
-      ],
-      "matchStrings": [
-        "#\\s*renovate:\\s*datasource=(?<datasource>[^\\s]+)\\s+depName=(?<depName>[^\\s]+)(\\s+versioning=(?<versioning>[^\\s]+))?(\\s+extractVersion=(?<extractVersion>[^\\s]+))?\\s*\\n[^:]*:\\s*['\"]?(?<currentValue>[^'\"\\s@]+)(?:@(?<currentDigest>sha256:[a-f0-9]+))?['\"]?"
-      ],
-      "versioningTemplate": "{{#if versioning}}{{{versioning}}}{{else}}semver{{/if}}"
-    },
-    {
-      "customType": "regex",
-      "description": "Update pinned Renovate preset versions from arillso/.github",
-      "managerFilePatterns": [
-        "/(^|/)renovate[^/]*\\.json$/",
-        "/(^|/)\\.renovaterc\\.json$/",
-        "/(^|/)\\.renovaterc$/"
-      ],
-      "matchStrings": ["github>arillso/\\.github[^\"]*#(?<currentValue>\\d{4}-\\d{2}-\\d{2})"],
-      "depNameTemplate": "arillso/.github",
-      "datasourceTemplate": "github-tags",
-      "versioningTemplate": "regex:^(?<major>\\d{4})-(?<minor>\\d{2})-(?<patch>\\d{2})$"
-    }
-  ]
+    "customManagers": [
+        {
+            "customType": "regex",
+            "description": "Update versions in comments (renovate: datasource=... depName=...). An optional @sha256:... suffix is captured separately as currentDigest, so digest-pinned image references (e.g. image: repo:tag@sha256:...) update the digest instead of mangling the whole string into currentValue.",
+            "managerFilePatterns": [
+                "/\\.ya?ml$/",
+                "/\\.json$/",
+                "/\\.toml$/",
+                "/Makefile$/",
+                "/\\.mk$/",
+                "/Dockerfile$/"
+            ],
+            "matchStrings": [
+                "#\\s*renovate:\\s*datasource=(?<datasource>[^\\s]+)\\s+depName=(?<depName>[^\\s]+)(\\s+versioning=(?<versioning>[^\\s]+))?(\\s+extractVersion=(?<extractVersion>[^\\s]+))?\\s*\\n[^:]*:\\s*['\"]?(?<currentValue>[^'\"\\s@]+)(?:@(?<currentDigest>sha256:[a-f0-9]+))?['\"]?"
+            ],
+            "versioningTemplate": "{{#if versioning}}{{{versioning}}}{{else}}semver{{/if}}"
+        },
+        {
+            "customType": "regex",
+            "description": "Update pinned Renovate preset versions from arillso/.github",
+            "managerFilePatterns": [
+                "/(^|/)renovate[^/]*\\.json$/",
+                "/(^|/)\\.renovaterc\\.json$/",
+                "/(^|/)\\.renovaterc$/"
+            ],
+            "matchStrings": [
+                "github>arillso/\\.github[^\"]*#(?<currentValue>\\d{4}-\\d{2}-\\d{2})"
+            ],
+            "depNameTemplate": "arillso/.github",
+            "datasourceTemplate": "github-tags",
+            "versioningTemplate": "regex:^(?<major>\\d{4})-(?<minor>\\d{2})-(?<patch>\\d{2})$"
+        }
+    ]
 }

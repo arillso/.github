@@ -2,92 +2,92 @@
 name: Pull Request
 
 on:
-  pull_request:
-    branches: [main]
-    types: [opened, synchronize, reopened, ready_for_review]
+    pull_request:
+        branches: [main]
+        types: [opened, synchronize, reopened, ready_for_review]
 
 permissions:
-  contents: read
+    contents: read
 
 concurrency:
-  group: ${{ github.ref }}-${{ github.workflow }}
-  cancel-in-progress: true
+    group: ${{ github.ref }}-${{ github.workflow }}
+    cancel-in-progress: true
 
 jobs:
-  # This repository ships workflows and configuration rather than application
-  # code, so the gate is lint plus code scanning. Each job calls this repo's own
-  # reusable via a local `./` path: the workflows consumers depend on are the
-  # same ones exercised here, and a break shows up before it reaches them.
-  lint:
-    name: Lint
-    permissions:
-      contents: read
-      pull-requests: write
-    uses: ./.github/workflows/ci-lint.yml
-    with:
-      enable_actionlint: true
-      # The embedded `run:` scripts in these workflows are only checked when
-      # shellcheck runs alongside actionlint.
-      enable_shellcheck: true
-      # Off for now: `ai-claude-review.yml` carries a 515-char `--allowedTools`
-      # line that trips the 500-char limit in templates/.yamllint.yml. The list
-      # is comma-separated and cannot be folded — YAML block folding inserts a
-      # space after each newline, which would corrupt the tool names. Enable
-      # once that line is restructured or the template's limit is revisited.
-      enable_yamllint: false
+    # This repository ships workflows and configuration rather than application
+    # code, so the gate is lint plus code scanning. Each job calls this repo's own
+    # reusable via a local `./` path: the workflows consumers depend on are the
+    # same ones exercised here, and a break shows up before it reaches them.
+    lint:
+        name: Lint
+        permissions:
+            contents: read
+            pull-requests: write
+        uses: ./.github/workflows/ci-lint.yml
+        with:
+            enable_actionlint: true
+            # The embedded `run:` scripts in these workflows are only checked when
+            # shellcheck runs alongside actionlint.
+            enable_shellcheck: true
+            # Off for now: `ai-claude-review.yml` carries a 515-char `--allowedTools`
+            # line that trips the 500-char limit in templates/.yamllint.yml. The list
+            # is comma-separated and cannot be folded — YAML block folding inserts a
+            # space after each newline, which would corrupt the tool names. Enable
+            # once that line is restructured or the template's limit is revisited.
+            enable_yamllint: false
 
-  review:
-    name: Code Review
-    permissions:
-      contents: read
-      pull-requests: write
-      issues: read
-      id-token: write
-    uses: ./.github/workflows/ai-claude-review.yml
-    secrets:
-      CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+    review:
+        name: Code Review
+        permissions:
+            contents: read
+            pull-requests: write
+            issues: read
+            id-token: write
+        uses: ./.github/workflows/ai-claude-review.yml
+        secrets:
+            CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
 
-  code-scan:
-    name: Code Analysis
-    permissions:
-      contents: read
-      security-events: write
-      actions: read
-    uses: ./.github/workflows/security-code.yml
-    with:
-      languages: '["actions"]'
+    code-scan:
+        name: Code Analysis
+        permissions:
+            contents: read
+            security-events: write
+            actions: read
+        uses: ./.github/workflows/security-code.yml
+        with:
+            languages: '["actions"]'
 
-  # `ci-ansible-molecule.yml` pipes the molecule output through `tee` so the
-  # failure text survives in the job summary and an artifact. Two ways that can
-  # break silently: dropping `set -o pipefail` makes every red run report green,
-  # and dropping `2>&1` leaves the file without the very text it exists for.
-  # This replicates the shell form against a command that is guaranteed to fail.
-  pipefail-guard:
-    name: Pipefail Guard
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-    steps:
-      - name: Assert exit code and stderr survive the tee pipe
-        run: |
-          set -euo pipefail
-          LOG="$RUNNER_TEMP/guard.log"
-          # The subshell carries its own `set` so the outer `set -e` does not
-          # abort before the assertions run; `|| rc=$?` captures the status.
-          rc=0
-          (
-            # A subshell inherits `pipefail` from the step body, so this `set`
-            # is belt-and-braces rather than the thing under test: the guard
-            # fails only when the option is absent from both.
-            set -euo pipefail
-            sh -c 'echo molecule-failure-text >&2; exit 2' 2>&1 | tee "$LOG"
-          ) || rc=$?
-          if [ "$rc" -ne 2 ]; then
-            echo "::error::exit code masked by the pipe (got $rc, want 2)"
-            exit 1
-          fi
-          if ! grep -q molecule-failure-text "$LOG"; then
-            echo "::error::stderr missing from the captured log"
-            exit 1
-          fi
-          echo "GUARD-PASS"
+    # `ci-ansible-molecule.yml` pipes the molecule output through `tee` so the
+    # failure text survives in the job summary and an artifact. Two ways that can
+    # break silently: dropping `set -o pipefail` makes every red run report green,
+    # and dropping `2>&1` leaves the file without the very text it exists for.
+    # This replicates the shell form against a command that is guaranteed to fail.
+    pipefail-guard:
+        name: Pipefail Guard
+        runs-on: ubuntu-latest
+        permissions:
+            contents: read
+        steps:
+            - name: Assert exit code and stderr survive the tee pipe
+              run: |
+                set -euo pipefail
+                LOG="$RUNNER_TEMP/guard.log"
+                # The subshell carries its own `set` so the outer `set -e` does not
+                # abort before the assertions run; `|| rc=$?` captures the status.
+                rc=0
+                (
+                  # A subshell inherits `pipefail` from the step body, so this `set`
+                  # is belt-and-braces rather than the thing under test: the guard
+                  # fails only when the option is absent from both.
+                  set -euo pipefail
+                  sh -c 'echo molecule-failure-text >&2; exit 2' 2>&1 | tee "$LOG"
+                ) || rc=$?
+                if [ "$rc" -ne 2 ]; then
+                  echo "::error::exit code masked by the pipe (got $rc, want 2)"
+                  exit 1
+                fi
+                if ! grep -q molecule-failure-text "$LOG"; then
+                  echo "::error::stderr missing from the captured log"
+                  exit 1
+                fi
+                echo "GUARD-PASS"

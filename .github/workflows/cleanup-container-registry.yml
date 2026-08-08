@@ -2,180 +2,180 @@
 name: Cleanup - Container Registry
 
 on:
-  workflow_call:
-    inputs:
-      account:
-        description: 'GitHub account or organization name'
-        required: false
-        type: string
-        default: 'arillso'
-      image_names:
-        description: 'Comma-separated list of image names'
-        required: true
-        type: string
-      cut_off:
-        description: 'Keep images newer than this (e.g., 60d, 90d)'
-        required: false
-        type: string
-        default: '60d'
-      keep_n_most_recent:
-        description: 'Keep N most recent images'
-        required: false
-        type: number
-        default: 5
-      enable_dockerhub:
-        description: 'Enable Docker Hub cleanup'
-        required: false
-        type: boolean
-        default: false
-      dockerhub_repository:
-        description: 'Docker Hub repository (e.g., arillso/ansible)'
-        required: false
-        type: string
-        default: ''
-      dockerhub_username:
-        description: 'Docker Hub username'
-        required: false
-        type: string
-        default: ''
-      dockerhub_retention_days:
-        description: 'Docker Hub retention in days'
-        required: false
-        type: string
-        default: '60d'
-      cron_schedule:
-        description: 'Cron schedule for cleanup'
-        required: false
-        type: string
-        default: '0 2 1 * *'
-      enable_summary:
-        description: 'Enable cleanup summary report'
-        required: false
-        type: boolean
-        default: true
-    secrets:
-      dockerhub_token:
-        description: 'Docker Hub token (required if enable_dockerhub is true)'
-        required: false
+    workflow_call:
+        inputs:
+            account:
+              description: 'GitHub account or organization name'
+              required: false
+              type: string
+              default: 'arillso'
+            image_names:
+              description: 'Comma-separated list of image names'
+              required: true
+              type: string
+            cut_off:
+              description: 'Keep images newer than this (e.g., 60d, 90d)'
+              required: false
+              type: string
+              default: '60d'
+            keep_n_most_recent:
+              description: 'Keep N most recent images'
+              required: false
+              type: number
+              default: 5
+            enable_dockerhub:
+              description: 'Enable Docker Hub cleanup'
+              required: false
+              type: boolean
+              default: false
+            dockerhub_repository:
+              description: 'Docker Hub repository (e.g., arillso/ansible)'
+              required: false
+              type: string
+              default: ''
+            dockerhub_username:
+              description: 'Docker Hub username'
+              required: false
+              type: string
+              default: ''
+            dockerhub_retention_days:
+              description: 'Docker Hub retention in days'
+              required: false
+              type: string
+              default: '60d'
+            cron_schedule:
+              description: 'Cron schedule for cleanup'
+              required: false
+              type: string
+              default: '0 2 1 * *'
+            enable_summary:
+              description: 'Enable cleanup summary report'
+              required: false
+              type: boolean
+              default: true
+        secrets:
+            dockerhub_token:
+              description: 'Docker Hub token (required if enable_dockerhub is true)'
+              required: false
 
 permissions:
-  contents: read
-  packages: write
+    contents: read
+    packages: write
 
 jobs:
-  docker-hub-cleanup:
-    name: Docker Hub Cleanup
-    runs-on: ubuntu-latest
-    if: ${{ inputs.enable_dockerhub }}
-    steps:
-      - name: Docker Hub Image Cleanup
-        env:
-          DOCKERHUB_USERNAME: ${{ inputs.dockerhub_username }}
-          DOCKERHUB_TOKEN: ${{ secrets.dockerhub_token }}
-          DOCKERHUB_REPO: ${{ inputs.dockerhub_repository }}
-          RETENTION_DAYS: ${{ inputs.dockerhub_retention_days }}
-        run: |
-          # Authenticate with Docker Hub
-          TOKEN=$(curl -s -H "Content-Type: application/json" \
-            -X POST -d '{"username":"'"$DOCKERHUB_USERNAME"'","password":"'"$DOCKERHUB_TOKEN"'"}' \
-            https://hub.docker.com/v2/users/login/ | jq -r .token)
+    docker-hub-cleanup:
+        name: Docker Hub Cleanup
+        runs-on: ubuntu-latest
+        if: ${{ inputs.enable_dockerhub }}
+        steps:
+            - name: Docker Hub Image Cleanup
+              env:
+                  DOCKERHUB_USERNAME: ${{ inputs.dockerhub_username }}
+                  DOCKERHUB_TOKEN: ${{ secrets.dockerhub_token }}
+                  DOCKERHUB_REPO: ${{ inputs.dockerhub_repository }}
+                  RETENTION_DAYS: ${{ inputs.dockerhub_retention_days }}
+              run: |
+                # Authenticate with Docker Hub
+                TOKEN=$(curl -s -H "Content-Type: application/json" \
+                  -X POST -d '{"username":"'"$DOCKERHUB_USERNAME"'","password":"'"$DOCKERHUB_TOKEN"'"}' \
+                  https://hub.docker.com/v2/users/login/ | jq -r .token)
 
-          # Parse retention days (remove 'd' suffix if present)
-          DAYS=$(echo "$RETENTION_DAYS" | sed 's/d$//')
-          CUTOFF_DATE=$(date -u -d "-${DAYS} days" +%Y-%m-%dT%H:%M:%S.%NZ 2>/dev/null \
-            || date -u -v-${DAYS}d +%Y-%m-%dT%H:%M:%S.000000000Z)
+                # Parse retention days (remove 'd' suffix if present)
+                DAYS=$(echo "$RETENTION_DAYS" | sed 's/d$//')
+                CUTOFF_DATE=$(date -u -d "-${DAYS} days" +%Y-%m-%dT%H:%M:%S.%NZ 2>/dev/null \
+                  || date -u -v-${DAYS}d +%Y-%m-%dT%H:%M:%S.000000000Z)
 
-          echo "Cleaning tags older than $DAYS days (before $CUTOFF_DATE)"
-          echo "Repository: $DOCKERHUB_REPO"
+                echo "Cleaning tags older than $DAYS days (before $CUTOFF_DATE)"
+                echo "Repository: $DOCKERHUB_REPO"
 
-          # List and delete old sha-* tags
-          PAGE=1
-          DELETED=0
-          while true; do
-            RESPONSE=$(curl -s -H "Authorization: Bearer $TOKEN" \
-              "https://hub.docker.com/v2/repositories/${DOCKERHUB_REPO}/tags/?page_size=100&page=${PAGE}")
+                # List and delete old sha-* tags
+                PAGE=1
+                DELETED=0
+                while true; do
+                  RESPONSE=$(curl -s -H "Authorization: Bearer $TOKEN" \
+                    "https://hub.docker.com/v2/repositories/${DOCKERHUB_REPO}/tags/?page_size=100&page=${PAGE}")
 
-            TAGS=$(echo "$RESPONSE" | jq -r '.results[]? | select(.name | test("^sha-[0-9a-f]{7}")) | select(.last_updated < "'"$CUTOFF_DATE"'") | .name')
+                  TAGS=$(echo "$RESPONSE" | jq -r '.results[]? | select(.name | test("^sha-[0-9a-f]{7}")) | select(.last_updated < "'"$CUTOFF_DATE"'") | .name')
 
-            if [ -z "$TAGS" ]; then
-              NEXT=$(echo "$RESPONSE" | jq -r '.next // empty')
-              if [ -z "$NEXT" ]; then
-                break
-              fi
-              PAGE=$((PAGE + 1))
-              continue
-            fi
+                  if [ -z "$TAGS" ]; then
+                    NEXT=$(echo "$RESPONSE" | jq -r '.next // empty')
+                    if [ -z "$NEXT" ]; then
+                      break
+                    fi
+                    PAGE=$((PAGE + 1))
+                    continue
+                  fi
 
-            for TAG in $TAGS; do
-              echo "Deleting tag: $TAG"
-              curl -s -X DELETE -H "Authorization: Bearer $TOKEN" \
-                "https://hub.docker.com/v2/repositories/${DOCKERHUB_REPO}/tags/${TAG}/"
-              DELETED=$((DELETED + 1))
-            done
+                  for TAG in $TAGS; do
+                    echo "Deleting tag: $TAG"
+                    curl -s -X DELETE -H "Authorization: Bearer $TOKEN" \
+                      "https://hub.docker.com/v2/repositories/${DOCKERHUB_REPO}/tags/${TAG}/"
+                    DELETED=$((DELETED + 1))
+                  done
 
-            NEXT=$(echo "$RESPONSE" | jq -r '.next // empty')
-            if [ -z "$NEXT" ]; then
-              break
-            fi
-            PAGE=$((PAGE + 1))
-          done
+                  NEXT=$(echo "$RESPONSE" | jq -r '.next // empty')
+                  if [ -z "$NEXT" ]; then
+                    break
+                  fi
+                  PAGE=$((PAGE + 1))
+                done
 
-          echo "Deleted $DELETED tags from Docker Hub"
+                echo "Deleted $DELETED tags from Docker Hub"
 
-  ghcr-cleanup:
-    name: GitHub Container Registry Cleanup
-    runs-on: ubuntu-latest
-    permissions:
-      packages: write
-    steps:
-      - name: Delete old untagged images
-        uses: snok/container-retention-policy@d3bdcf5ce9b05f685154e4a16c39233b245e3d53 # v3.1.0
-        with:
-          account: ${{ inputs.account }}
-          token: ${{ secrets.GITHUB_TOKEN }}
-          image-names: ${{ inputs.image_names }}
-          cut-off: ${{ inputs.cut_off }}
-          keep-n-most-recent: ${{ inputs.keep_n_most_recent }}
-          tag-selection: untagged
-          dry-run: "false"
+    ghcr-cleanup:
+        name: GitHub Container Registry Cleanup
+        runs-on: ubuntu-latest
+        permissions:
+            packages: write
+        steps:
+            - name: Delete old untagged images
+              uses: snok/container-retention-policy@d3bdcf5ce9b05f685154e4a16c39233b245e3d53 # v3.1.0
+              with:
+                  account: ${{ inputs.account }}
+                  token: ${{ secrets.GITHUB_TOKEN }}
+                  image-names: ${{ inputs.image_names }}
+                  cut-off: ${{ inputs.cut_off }}
+                  keep-n-most-recent: ${{ inputs.keep_n_most_recent }}
+                  tag-selection: untagged
+                  dry-run: "false"
 
-  cleanup-summary:
-    name: Cleanup Summary
-    needs: [docker-hub-cleanup, ghcr-cleanup]
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-    if: ${{ always() && inputs.enable_summary }}
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+    cleanup-summary:
+        name: Cleanup Summary
+        needs: [docker-hub-cleanup, ghcr-cleanup]
+        runs-on: ubuntu-latest
+        permissions:
+            contents: read
+        if: ${{ always() && inputs.enable_summary }}
+        steps:
+            - name: Checkout code
+              uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
 
-      - name: Build summary arguments
-        id: build_args
-        run: |
-          ARGS=""
-          if [ "${{ inputs.enable_dockerhub }}" == "true" ]; then
-            ARGS="DockerHub=${{ needs.docker-hub-cleanup.result }} "
-          fi
-          ARGS="${ARGS}GHCR=${{ needs.ghcr-cleanup.result }}"
-          echo "args=$ARGS" >> $GITHUB_OUTPUT
+            - name: Build summary arguments
+              id: build_args
+              run: |
+                ARGS=""
+                if [ "${{ inputs.enable_dockerhub }}" == "true" ]; then
+                  ARGS="DockerHub=${{ needs.docker-hub-cleanup.result }} "
+                fi
+                ARGS="${ARGS}GHCR=${{ needs.ghcr-cleanup.result }}"
+                echo "args=$ARGS" >> $GITHUB_OUTPUT
 
-      - name: Execute cleanup summary script
-        run: |
-          if [ -f "./.github/scripts/cleanup-summary.sh" ]; then
-            ./.github/scripts/cleanup-summary.sh ${{ steps.build_args.outputs.args }}
-          else
-            echo "# Cleanup Summary" > cleanup-report.md
-            echo "" >> cleanup-report.md
-            if [ "${{ inputs.enable_dockerhub }}" == "true" ]; then
-              echo "- Docker Hub: ${{ needs.docker-hub-cleanup.result }}" >> cleanup-report.md
-            fi
-            echo "- GHCR: ${{ needs.ghcr-cleanup.result }}" >> cleanup-report.md
-          fi
+            - name: Execute cleanup summary script
+              run: |
+                if [ -f "./.github/scripts/cleanup-summary.sh" ]; then
+                  ./.github/scripts/cleanup-summary.sh ${{ steps.build_args.outputs.args }}
+                else
+                  echo "# Cleanup Summary" > cleanup-report.md
+                  echo "" >> cleanup-report.md
+                  if [ "${{ inputs.enable_dockerhub }}" == "true" ]; then
+                    echo "- Docker Hub: ${{ needs.docker-hub-cleanup.result }}" >> cleanup-report.md
+                  fi
+                  echo "- GHCR: ${{ needs.ghcr-cleanup.result }}" >> cleanup-report.md
+                fi
 
-      - name: Upload Cleanup Report
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
-        with:
-          name: cleanup-report
-          path: cleanup-report.md
-          retention-days: 30
+            - name: Upload Cleanup Report
+              uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+              with:
+                  name: cleanup-report
+                  path: cleanup-report.md
+                  retention-days: 30

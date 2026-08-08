@@ -2,96 +2,96 @@
 name: Release - Ansible Collection
 
 on:
-  workflow_call:
-    inputs:
-      collection_namespace:
-        description: 'Collection namespace (e.g., arillso)'
-        required: false
-        type: string
-        default: 'arillso'
-      collection_name:
-        description: 'Collection name (e.g., system)'
-        required: true
-        type: string
-      python_version:
-        description: >-
-          Python version to use. When empty, the workflow reads the repo-root
-          .python-version file, falling back to 3.11 if that is absent too.
-        required: false
-        type: string
-        default: ''
-    secrets:
-      galaxy_api_key:
-        description: 'Ansible Galaxy API key'
-        required: true
+    workflow_call:
+        inputs:
+            collection_namespace:
+              description: 'Collection namespace (e.g., arillso)'
+              required: false
+              type: string
+              default: 'arillso'
+            collection_name:
+              description: 'Collection name (e.g., system)'
+              required: true
+              type: string
+            python_version:
+              description: >-
+                Python version to use. When empty, the workflow reads the repo-root
+                .python-version file, falling back to 3.11 if that is absent too.
+              required: false
+              type: string
+              default: ''
+        secrets:
+            galaxy_api_key:
+              description: 'Ansible Galaxy API key'
+              required: true
 
 permissions:
-  contents: write
+    contents: write
 
 jobs:
-  publish:
-    name: Publish to Ansible Galaxy
-    runs-on: ubuntu-latest
+    publish:
+        name: Publish to Ansible Galaxy
+        runs-on: ubuntu-latest
 
-    steps:
-      - name: Checkout Code
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        steps:
+            - name: Checkout Code
+              uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
 
-      - name: Get version from tag
-        id: get_version
-        run: echo "VERSION=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
+            - name: Get version from tag
+              id: get_version
+              run: echo "VERSION=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
 
-      - name: Extract changelog for version
-        id: changelog
-        run: |
-          VERSION="${{ steps.get_version.outputs.VERSION }}"
-          # Extract the section for this version from CHANGELOG.md
-          if [ -f "CHANGELOG.md" ]; then
-            # Get content between this version and the next version heading
-            CONTENT=$(sed -n "/## \[$VERSION\]/,/## \[/p" CHANGELOG.md | sed '$d')
-            # If the version section is empty, try without brackets
-            if [ -z "$CONTENT" ]; then
-              CONTENT=$(sed -n "/## $VERSION/,/## /p" CHANGELOG.md | sed '$d')
-            fi
-            # Save to file for multiline support
-            echo "$CONTENT" > /tmp/changelog.txt
-            echo "found=true" >> $GITHUB_OUTPUT
-          else
-            echo "found=false" >> $GITHUB_OUTPUT
-          fi
+            - name: Extract changelog for version
+              id: changelog
+              run: |
+                VERSION="${{ steps.get_version.outputs.VERSION }}"
+                # Extract the section for this version from CHANGELOG.md
+                if [ -f "CHANGELOG.md" ]; then
+                  # Get content between this version and the next version heading
+                  CONTENT=$(sed -n "/## \[$VERSION\]/,/## \[/p" CHANGELOG.md | sed '$d')
+                  # If the version section is empty, try without brackets
+                  if [ -z "$CONTENT" ]; then
+                    CONTENT=$(sed -n "/## $VERSION/,/## /p" CHANGELOG.md | sed '$d')
+                  fi
+                  # Save to file for multiline support
+                  echo "$CONTENT" > /tmp/changelog.txt
+                  echo "found=true" >> $GITHUB_OUTPUT
+                else
+                  echo "found=false" >> $GITHUB_OUTPUT
+                fi
 
-      - name: Resolve Python version
-        id: python
-        env:
-          PYTHON_VERSION_INPUT: ${{ inputs.python_version }}
-        run: |
-          FILE_VERSION=""
-          if [ -f ".python-version" ]; then
-            FILE_VERSION="$(head -n1 .python-version | tr -d '[:space:]')"
-          fi
-          if [ -n "$PYTHON_VERSION_INPUT" ]; then
-            VERSION="$PYTHON_VERSION_INPUT"
-          elif [ -n "$FILE_VERSION" ]; then
-            VERSION="$FILE_VERSION"
-          else
-            VERSION="3.11"
-          fi
-          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+            - name: Resolve Python version
+              id: python
+              env:
+                  PYTHON_VERSION_INPUT: ${{ inputs.python_version }}
+              run: |
+                FILE_VERSION=""
+                if [ -f ".python-version" ]; then
+                  FILE_VERSION="$(head -n1 .python-version | tr -d '[:space:]')"
+                fi
+                if [ -n "$PYTHON_VERSION_INPUT" ]; then
+                  VERSION="$PYTHON_VERSION_INPUT"
+                elif [ -n "$FILE_VERSION" ]; then
+                  VERSION="$FILE_VERSION"
+                else
+                  VERSION="3.11"
+                fi
+                echo "version=$VERSION" >> "$GITHUB_OUTPUT"
 
-      - name: Set up Python
-        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7
-        with:
-          python-version: ${{ steps.python.outputs.version }}
+            - name: Set up Python
+              uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7
+              with:
+                  python-version: ${{ steps.python.outputs.version }}
 
-      - name: Build and Publish Collection
-        uses: artis3n/ansible_galaxy_collection@ffbca2460a5a1c600b941bbf1536bd61de1c2227 # v3
-        with:
-          api_key: ${{ secrets.galaxy_api_key }}
+            - name: Build and Publish Collection
+              uses: artis3n/ansible_galaxy_collection@ffbca2460a5a1c600b941bbf1536bd61de1c2227 # v3
+              with:
+                  api_key: ${{ secrets.galaxy_api_key }}
 
-      - name: Create GitHub Release
-        uses: softprops/action-gh-release@3d0d9888cb7fd7b750713d6e236d1fcb99157228 # v3
-        with:
-          body_path: ${{ steps.changelog.outputs.found == 'true' && '/tmp/changelog.txt' || '' }}
-          generate_release_notes: ${{ steps.changelog.outputs.found != 'true' }}
-          draft: false
-          prerelease: false
+            - name: Create GitHub Release
+              uses: softprops/action-gh-release@3d0d9888cb7fd7b750713d6e236d1fcb99157228 # v3
+              with:
+                  body_path: ${{ steps.changelog.outputs.found == 'true' && '/tmp/changelog.txt' || '' }}
+                  generate_release_notes: ${{ steps.changelog.outputs.found != 'true' }}
+                  draft: false
+                  prerelease: false

@@ -2,240 +2,240 @@
 name: Security - SBOM Generation
 
 on:
-  workflow_call:
-    inputs:
-      artifact-type:
-        type: string
-        required: true
-        description: |
-          Artifact type (container, filesystem, go-binary).
-          `go-binary` records the module graph via `cyclonedx-gomod mod` and
-          therefore also applies to libraries that build no binary.
-      artifact-ref:
-        type: string
-        required: true
-        description: 'Artifact reference (image name, directory path, or binary path)'
-      working-directory:
-        type: string
-        default: '.'
-        description: 'Working directory'
-      sbom-format:
-        type: string
-        default: 'cyclonedx-json'
-        description: 'SBOM format (cyclonedx-json, spdx-json, syft-json)'
-      cancel-in-progress:
-        type: boolean
-        required: false
-        default: true
-        description: |
-          Whether to cancel in-progress runs in the same concurrency group.
-          Default matches this workflow's intended semantics; override only
-          for matrix or fan-out invocations that need different semantics
-          than the single-call default.
-      concurrency-suffix:
-        type: string
-        required: false
-        default: ''
-        description: |
-          Optional suffix appended to the concurrency group as `-<suffix>`.
-          Empty default preserves the original group name; set to separate
-          parallel invocations of this reusable from the same caller (e.g.
-          per-matrix-leg or per-mode).
-      attach-to-release:
-        type: boolean
-        required: false
-        default: false
-        description: |
-          Whether to attach the SBOM to the GitHub release for the current tag.
-          Only takes effect on tag refs, because without a tag there is no
-          release to attach to. The Actions artifact upload is unaffected.
-          Run this after the job that creates the release (`needs:`), never as
-          an independent tag-triggered workflow: the upload creates a release
-          for the tag if none exists yet, which would race the dedicated
-          release job and leave a partially populated release behind.
+    workflow_call:
+        inputs:
+            artifact-type:
+              type: string
+              required: true
+              description: |
+                Artifact type (container, filesystem, go-binary).
+                `go-binary` records the module graph via `cyclonedx-gomod mod` and
+                therefore also applies to libraries that build no binary.
+            artifact-ref:
+              type: string
+              required: true
+              description: 'Artifact reference (image name, directory path, or binary path)'
+            working-directory:
+              type: string
+              default: '.'
+              description: 'Working directory'
+            sbom-format:
+              type: string
+              default: 'cyclonedx-json'
+              description: 'SBOM format (cyclonedx-json, spdx-json, syft-json)'
+            cancel-in-progress:
+              type: boolean
+              required: false
+              default: true
+              description: |
+                Whether to cancel in-progress runs in the same concurrency group.
+                Default matches this workflow's intended semantics; override only
+                for matrix or fan-out invocations that need different semantics
+                than the single-call default.
+            concurrency-suffix:
+              type: string
+              required: false
+              default: ''
+              description: |
+                Optional suffix appended to the concurrency group as `-<suffix>`.
+                Empty default preserves the original group name; set to separate
+                parallel invocations of this reusable from the same caller (e.g.
+                per-matrix-leg or per-mode).
+            attach-to-release:
+              type: boolean
+              required: false
+              default: false
+              description: |
+                Whether to attach the SBOM to the GitHub release for the current tag.
+                Only takes effect on tag refs, because without a tag there is no
+                release to attach to. The Actions artifact upload is unaffected.
+                Run this after the job that creates the release (`needs:`), never as
+                an independent tag-triggered workflow: the upload creates a release
+                for the tag if none exists yet, which would race the dedicated
+                release job and leave a partially populated release behind.
 
 permissions:
-  contents: write
+    contents: write
 
 concurrency:
-  group: >-
-    ${{ github.workflow }}-${{ github.ref }}${{
-      inputs.concurrency-suffix != '' && format('-{0}', inputs.concurrency-suffix) || ''
-    }}
-  cancel-in-progress: ${{ inputs.cancel-in-progress }}
+    group: >-
+      ${{ github.workflow }}-${{ github.ref }}${{
+        inputs.concurrency-suffix != '' && format('-{0}', inputs.concurrency-suffix) || ''
+      }}
+    cancel-in-progress: ${{ inputs.cancel-in-progress }}
 
 jobs:
-  generate-sbom:
-    name: Generate SBOM
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
-    outputs:
-      sbom-file: ${{ steps.sbom-output.outputs.file }}
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
-        with:
-          persist-credentials: false
+    generate-sbom:
+        name: Generate SBOM
+        runs-on: ubuntu-latest
+        timeout-minutes: 15
+        outputs:
+            sbom-file: ${{ steps.sbom-output.outputs.file }}
+        steps:
+            - name: Checkout code
+              uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+              with:
+                  persist-credentials: false
 
-      # Container Image SBOM
-      - name: Generate SBOM for container image
-        if: inputs.artifact-type == 'container'
-        uses: anchore/sbom-action@e22c389904149dbc22b58101806040fa8d37a610 # v0.24.0
-        with:
-          image: ${{ inputs.artifact-ref }}
-          format: ${{ inputs.sbom-format }}
-          output-file: sbom-${{ inputs.artifact-type }}.json
+            # Container Image SBOM
+            - name: Generate SBOM for container image
+              if: inputs.artifact-type == 'container'
+              uses: anchore/sbom-action@e22c389904149dbc22b58101806040fa8d37a610 # v0.24.0
+              with:
+                  image: ${{ inputs.artifact-ref }}
+                  format: ${{ inputs.sbom-format }}
+                  output-file: sbom-${{ inputs.artifact-type }}.json
 
-      # Filesystem SBOM
-      - name: Generate SBOM for filesystem
-        if: inputs.artifact-type == 'filesystem'
-        uses: anchore/sbom-action@e22c389904149dbc22b58101806040fa8d37a610 # v0.24.0
-        with:
-          path: ${{ inputs.artifact-ref }}
-          format: ${{ inputs.sbom-format }}
-          output-file: sbom-${{ inputs.artifact-type }}.json
+            # Filesystem SBOM
+            - name: Generate SBOM for filesystem
+              if: inputs.artifact-type == 'filesystem'
+              uses: anchore/sbom-action@e22c389904149dbc22b58101806040fa8d37a610 # v0.24.0
+              with:
+                  path: ${{ inputs.artifact-ref }}
+                  format: ${{ inputs.sbom-format }}
+                  output-file: sbom-${{ inputs.artifact-type }}.json
 
-      # Go Binary SBOM
-      - name: Setup Go
-        if: inputs.artifact-type == 'go-binary'
-        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
-        with:
-          go-version-file: 'go.mod'
-          cache: true
+            # Go Binary SBOM
+            - name: Setup Go
+              if: inputs.artifact-type == 'go-binary'
+              uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+              with:
+                  go-version-file: 'go.mod'
+                  cache: true
 
-      - name: Generate SBOM for Go binary
-        if: inputs.artifact-type == 'go-binary'
-        working-directory: ${{ inputs.working-directory }}
-        env:
-          # renovate: datasource=github-releases depName=CycloneDX/cyclonedx-gomod
-          CYCLONEDX_GOMOD_VERSION: 'v1.10.0'
-          ARTIFACT_TYPE: ${{ inputs.artifact-type }}
-        run: |
-          go install "github.com/CycloneDX/cyclonedx-gomod/cmd/cyclonedx-gomod@${CYCLONEDX_GOMOD_VERSION}"
-          cyclonedx-gomod mod -json -output "../sbom-${ARTIFACT_TYPE}.json"
+            - name: Generate SBOM for Go binary
+              if: inputs.artifact-type == 'go-binary'
+              working-directory: ${{ inputs.working-directory }}
+              env:
+                  # renovate: datasource=github-releases depName=CycloneDX/cyclonedx-gomod
+                  CYCLONEDX_GOMOD_VERSION: 'v1.10.0'
+                  ARTIFACT_TYPE: ${{ inputs.artifact-type }}
+              run: |
+                go install "github.com/CycloneDX/cyclonedx-gomod/cmd/cyclonedx-gomod@${CYCLONEDX_GOMOD_VERSION}"
+                cyclonedx-gomod mod -json -output "../sbom-${ARTIFACT_TYPE}.json"
 
-      # Resolve the SBOM file path for downstream steps.
-      - name: Validate SBOM
-        id: sbom-output
-        env:
-          ARTIFACT_TYPE: ${{ inputs.artifact-type }}
-        run: |
-          SBOM_FILE="sbom-${ARTIFACT_TYPE}.json"
-          echo "file=$SBOM_FILE" >> "$GITHUB_OUTPUT"
+            # Resolve the SBOM file path for downstream steps.
+            - name: Validate SBOM
+              id: sbom-output
+              env:
+                  ARTIFACT_TYPE: ${{ inputs.artifact-type }}
+              run: |
+                SBOM_FILE="sbom-${ARTIFACT_TYPE}.json"
+                echo "file=$SBOM_FILE" >> "$GITHUB_OUTPUT"
 
-          if [ -f "$SBOM_FILE" ]; then
-            echo "✓ SBOM generated successfully: $SBOM_FILE"
-            COMPONENTS=$(jq '[.components[] // .packages[]] | length' "$SBOM_FILE" 2>/dev/null || echo "unknown")
-            echo "Components/Packages: $COMPONENTS"
-          else
-            echo "::error::SBOM file not found: $SBOM_FILE"
-            exit 1
-          fi
+                if [ -f "$SBOM_FILE" ]; then
+                  echo "✓ SBOM generated successfully: $SBOM_FILE"
+                  COMPONENTS=$(jq '[.components[] // .packages[]] | length' "$SBOM_FILE" 2>/dev/null || echo "unknown")
+                  echo "Components/Packages: $COMPONENTS"
+                else
+                  echo "::error::SBOM file not found: $SBOM_FILE"
+                  exit 1
+                fi
 
-      - name: Upload SBOM artifact
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
-        with:
-          name: sbom-${{ inputs.artifact-type }}
-          path: ${{ steps.sbom-output.outputs.file }}
-          retention-days: 90
-          if-no-files-found: error
+            - name: Upload SBOM artifact
+              uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+              with:
+                  name: sbom-${{ inputs.artifact-type }}
+                  path: ${{ steps.sbom-output.outputs.file }}
+                  retention-days: 90
+                  if-no-files-found: error
 
-      # Release assets keep the format in the filename, so a consumer can tell
-      # CycloneDX from SPDX without opening the file. Works on a copy, leaving
-      # the job output and the uploaded artifact untouched.
-      - name: Name SBOM for release
-        id: release-asset
-        if: inputs.attach-to-release && startsWith(github.ref, 'refs/tags/')
-        env:
-          SBOM_FILE: ${{ steps.sbom-output.outputs.file }}
-          SBOM_FORMAT: ${{ inputs.sbom-format }}
-          ARTIFACT_TYPE: ${{ inputs.artifact-type }}
-        run: |
-          # `cyclonedx-gomod mod -json` emits CycloneDX whatever `sbom-format`
-          # says, so the go-binary name follows the generator, not the input —
-          # a release asset carries its name at a stable public URL and must
-          # not claim a format it does not contain.
-          if [ "$ARTIFACT_TYPE" = "go-binary" ]; then
-            ASSET="sbom.cdx.json"
-          else
-            case "$SBOM_FORMAT" in
-              cyclonedx-json) ASSET="sbom.cdx.json" ;;
-              spdx-json) ASSET="sbom.spdx.json" ;;
-              syft-json) ASSET="sbom.syft.json" ;;
-              *)
-                echo "::error::Unknown SBOM format: $SBOM_FORMAT"
-                exit 1
-                ;;
-            esac
-          fi
+            # Release assets keep the format in the filename, so a consumer can tell
+            # CycloneDX from SPDX without opening the file. Works on a copy, leaving
+            # the job output and the uploaded artifact untouched.
+            - name: Name SBOM for release
+              id: release-asset
+              if: inputs.attach-to-release && startsWith(github.ref, 'refs/tags/')
+              env:
+                  SBOM_FILE: ${{ steps.sbom-output.outputs.file }}
+                  SBOM_FORMAT: ${{ inputs.sbom-format }}
+                  ARTIFACT_TYPE: ${{ inputs.artifact-type }}
+              run: |
+                # `cyclonedx-gomod mod -json` emits CycloneDX whatever `sbom-format`
+                # says, so the go-binary name follows the generator, not the input —
+                # a release asset carries its name at a stable public URL and must
+                # not claim a format it does not contain.
+                if [ "$ARTIFACT_TYPE" = "go-binary" ]; then
+                  ASSET="sbom.cdx.json"
+                else
+                  case "$SBOM_FORMAT" in
+                    cyclonedx-json) ASSET="sbom.cdx.json" ;;
+                    spdx-json) ASSET="sbom.spdx.json" ;;
+                    syft-json) ASSET="sbom.syft.json" ;;
+                    *)
+                      echo "::error::Unknown SBOM format: $SBOM_FORMAT"
+                      exit 1
+                      ;;
+                  esac
+                fi
 
-          cp "$SBOM_FILE" "$ASSET"
-          echo "path=$ASSET" >> "$GITHUB_OUTPUT"
+                cp "$SBOM_FILE" "$ASSET"
+                echo "path=$ASSET" >> "$GITHUB_OUTPUT"
 
-      - name: Attach SBOM to release
-        if: inputs.attach-to-release && startsWith(github.ref, 'refs/tags/')
-        uses: softprops/action-gh-release@3d0d9888cb7fd7b750713d6e236d1fcb99157228 # v3
-        with:
-          tag_name: ${{ github.ref_name }}
-          files: ${{ steps.release-asset.outputs.path }}
+            - name: Attach SBOM to release
+              if: inputs.attach-to-release && startsWith(github.ref, 'refs/tags/')
+              uses: softprops/action-gh-release@3d0d9888cb7fd7b750713d6e236d1fcb99157228 # v3
+              with:
+                  tag_name: ${{ github.ref_name }}
+                  files: ${{ steps.release-asset.outputs.path }}
 
-  sbom-report:
-    name: Create Report
-    runs-on: ubuntu-latest
-    needs: [generate-sbom]
-    if: always() && !cancelled()
-    steps:
-      - name: Download SBOM
-        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
-        with:
-          name: sbom-${{ inputs.artifact-type }}
-          path: ./sbom
-        continue-on-error: true
+    sbom-report:
+        name: Create Report
+        runs-on: ubuntu-latest
+        needs: [generate-sbom]
+        if: always() && !cancelled()
+        steps:
+            - name: Download SBOM
+              uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+              with:
+                  name: sbom-${{ inputs.artifact-type }}
+                  path: ./sbom
+              continue-on-error: true
 
-      - name: Generate SBOM Report
-        run: |
-          TIMESTAMP=$(date -u '+%Y-%m-%d %H:%M:%S UTC')
+            - name: Generate SBOM Report
+              run: |
+                TIMESTAMP=$(date -u '+%Y-%m-%d %H:%M:%S UTC')
 
-          # Count SBOM components
-          if [ -f "./sbom/sbom-${{ inputs.artifact-type }}.json" ]; then
-            COMPONENT_COUNT=$(jq '[.components[] // .packages[]] | length' "./sbom/sbom-${{ inputs.artifact-type }}.json" 2>/dev/null || echo "unknown")
-          else
-            COMPONENT_COUNT="N/A"
-          fi
+                # Count SBOM components
+                if [ -f "./sbom/sbom-${{ inputs.artifact-type }}.json" ]; then
+                  COMPONENT_COUNT=$(jq '[.components[] // .packages[]] | length' "./sbom/sbom-${{ inputs.artifact-type }}.json" 2>/dev/null || echo "unknown")
+                else
+                  COMPONENT_COUNT="N/A"
+                fi
 
-          cat >> "$GITHUB_STEP_SUMMARY" << EOF
-          # 📋 SBOM Generation Report
+                cat >> "$GITHUB_STEP_SUMMARY" << EOF
+                # 📋 SBOM Generation Report
 
-          **Timestamp:** $TIMESTAMP
-          **Artifact Type:** ${{ inputs.artifact-type }}
-          **Artifact Reference:** \`${{ inputs.artifact-ref }}\`
+                **Timestamp:** $TIMESTAMP
+                **Artifact Type:** ${{ inputs.artifact-type }}
+                **Artifact Reference:** \`${{ inputs.artifact-ref }}\`
 
-          ## SBOM Details
+                ## SBOM Details
 
-          | Property | Value |
-          |----------|-------|
-          | Format | ${{ inputs.sbom-format }} |
-          | Components/Packages | $COMPONENT_COUNT |
-          | Status | ${{ needs.generate-sbom.result }} |
+                | Property | Value |
+                |----------|-------|
+                | Format | ${{ inputs.sbom-format }} |
+                | Components/Packages | $COMPONENT_COUNT |
+                | Status | ${{ needs.generate-sbom.result }} |
 
-          ## What is an SBOM?
+                ## What is an SBOM?
 
-          A Software Bill of Materials (SBOM) is a complete inventory of all components,
-          libraries, and dependencies in your software artifact. It provides:
+                A Software Bill of Materials (SBOM) is a complete inventory of all components,
+                libraries, and dependencies in your software artifact. It provides:
 
-          - 🔍 **Transparency**: Know exactly what's in your software
-          - 🛡️ **Security**: Identify vulnerable dependencies quickly
-          - 📜 **Compliance**: Meet regulatory requirements
-          - 🔗 **Supply Chain**: Track software provenance
+                - 🔍 **Transparency**: Know exactly what's in your software
+                - 🛡️ **Security**: Identify vulnerable dependencies quickly
+                - 📜 **Compliance**: Meet regulatory requirements
+                - 🔗 **Supply Chain**: Track software provenance
 
-          ## Usage
+                ## Usage
 
-          The SBOM artifact is available for download and can be:
-          - Uploaded to vulnerability scanners
-          - Stored in artifact repositories
-          - Attached to GitHub releases
-          - Used for compliance documentation
+                The SBOM artifact is available for download and can be:
+                - Uploaded to vulnerability scanners
+                - Stored in artifact repositories
+                - Attached to GitHub releases
+                - Used for compliance documentation
 
-          ---
-          *SBOM generation completed*
-          EOF
+                ---
+                *SBOM generation completed*
+                EOF
