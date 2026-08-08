@@ -7,7 +7,10 @@ on:
       artifact-type:
         type: string
         required: true
-        description: 'Artifact type (container, filesystem, go-binary)'
+        description: |
+          Artifact type (container, filesystem, go-binary).
+          `go-binary` records the module graph via `cyclonedx-gomod mod` and
+          therefore also applies to libraries that build no binary.
       artifact-ref:
         type: string
         required: true
@@ -38,6 +41,18 @@ on:
           Empty default preserves the original group name; set to separate
           parallel invocations of this reusable from the same caller (e.g.
           per-matrix-leg or per-mode).
+      attach-to-release:
+        type: boolean
+        required: false
+        default: false
+        description: |
+          Whether to attach the SBOM to the GitHub release for the current tag.
+          Only takes effect on tag refs, because without a tag there is no
+          release to attach to. The Actions artifact upload is unaffected.
+          Run this after the job that creates the release (`needs:`), never as
+          an independent tag-triggered workflow: the upload creates a release
+          for the tag if none exists yet, which would race the dedicated
+          release job and leave a partially populated release behind.
 
 permissions:
   contents: write
@@ -124,6 +139,45 @@ jobs:
           path: ${{ steps.sbom-output.outputs.file }}
           retention-days: 90
           if-no-files-found: error
+
+      # Release assets keep the format in the filename, so a consumer can tell
+      # CycloneDX from SPDX without opening the file. Works on a copy, leaving
+      # the job output and the uploaded artifact untouched.
+      - name: Name SBOM for release
+        id: release-asset
+        if: inputs.attach-to-release && startsWith(github.ref, 'refs/tags/')
+        env:
+          SBOM_FILE: ${{ steps.sbom-output.outputs.file }}
+          SBOM_FORMAT: ${{ inputs.sbom-format }}
+          ARTIFACT_TYPE: ${{ inputs.artifact-type }}
+        run: |
+          # `cyclonedx-gomod mod -json` emits CycloneDX whatever `sbom-format`
+          # says, so the go-binary name follows the generator, not the input —
+          # a release asset carries its name at a stable public URL and must
+          # not claim a format it does not contain.
+          if [ "$ARTIFACT_TYPE" = "go-binary" ]; then
+            ASSET="sbom.cdx.json"
+          else
+            case "$SBOM_FORMAT" in
+              cyclonedx-json) ASSET="sbom.cdx.json" ;;
+              spdx-json) ASSET="sbom.spdx.json" ;;
+              syft-json) ASSET="sbom.syft.json" ;;
+              *)
+                echo "::error::Unknown SBOM format: $SBOM_FORMAT"
+                exit 1
+                ;;
+            esac
+          fi
+
+          cp "$SBOM_FILE" "$ASSET"
+          echo "path=$ASSET" >> "$GITHUB_OUTPUT"
+
+      - name: Attach SBOM to release
+        if: inputs.attach-to-release && startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@3d0d9888cb7fd7b750713d6e236d1fcb99157228 # v3
+        with:
+          tag_name: ${{ github.ref_name }}
+          files: ${{ steps.release-asset.outputs.path }}
 
   sbom-report:
     name: Create Report
