@@ -449,7 +449,7 @@ Initial repository setup:
 - **AGENTS.md**: AI agent documentation for workflow repository
 - **CLAUDE.md**: Claude Code import reference
 - **CHANGELOG.md**: Rolling release changelog (this file)
-- **.editorconfig**: Root editor configuration (2-space indentation)
+- **.editorconfig**: Root editor configuration (4-space indentation)
 
 **Reusable Workflows** (in `.github/workflows/`):
 
