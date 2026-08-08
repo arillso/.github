@@ -8,19 +8,12 @@ body:
       value: |
         Thanks for taking the time to fill out this bug report! Please provide as much detail as possible.
 
-  - type: dropdown
-    id: role
+  - type: input
+    id: component
     attributes:
-      label: Which role is affected?
-      description: Select the role where you encountered the bug
-      options:
-        - Alloy (Grafana Alloy)
-        - DO (DigitalOcean Agent)
-        - Tailscale
-        - Collection (general)
-        - Not sure
-    validations:
-      required: true
+      label: Affected Component(s)
+      description: Which role, package, module, or workflow is affected?
+      placeholder: e.g., alloy role, cleanup workflow
 
   - type: textarea
     id: description
@@ -56,14 +49,14 @@ body:
     id: playbook
     attributes:
       label: Playbook/Configuration
-      description: Please provide the relevant parts of your playbook or role configuration
+      description: Please provide the relevant parts of your playbook or configuration
       render: yaml
       placeholder: |
         - hosts: all
           roles:
-            - role: arillso.agent.alloy
+            - role: namespace.collection.role
               vars:
-                alloy_prometheus_enabled: true
+                some_option: true
 
   - type: textarea
     id: logs
@@ -76,8 +69,8 @@ body:
   - type: input
     id: version
     attributes:
-      label: Collection Version
-      description: What version of arillso.agent are you using?
+      label: Version
+      description: What version of the affected component are you using?
       placeholder: e.g., 1.0.0
     validations:
       required: true

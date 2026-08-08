@@ -19,6 +19,15 @@ This is a rolling release - changes are deployed continuously to `main`.
 
 ### Changed
 
+- **ISSUE_TEMPLATE/\*.yml**, **templates/ISSUE_TEMPLATE/\*.yml**: Generalize the
+  org-wide issue templates, completing the work `pull_request_template.md`
+  received on 2026-08-07. The required role dropdown (Alloy, DO, Tailscale) came
+  from `ansible.agent` and was meaningless in every other repository these
+  org-wide defaults apply to — `go.ansible` and `guide` have no roles at all, yet
+  every reporter there had to pick one. It is now an optional free-form
+  `Affected Component(s)` input, matching the PR template. The bug report also
+  asked for the version of `arillso.agent` specifically, and the `arillso.agent`
+  playbook examples are replaced by neutral placeholders.
 - **LICENSE** now states `Copyright (c) 2025-2026 Arillso` instead of the
   single year `2025`, matching the canonical `YEAR-YEAR` range used across the
   arillso repositories.
