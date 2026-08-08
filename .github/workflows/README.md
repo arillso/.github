@@ -351,12 +351,16 @@ jobs:
 
 **Inputs:**
 
-- `artifact-type` (required): Artifact type — container, filesystem, go-binary
+- `artifact-type` (required): Artifact type — container, filesystem, go-binary.
+  `go-binary` records the module graph and therefore also applies to libraries
+  that build no binary
 - `artifact-ref` (required): Artifact reference — image name, directory path or binary path
 - `working-directory` (optional): Working directory (default: `.`)
 - `sbom-format` (optional): SBOM format — cyclonedx-json, spdx-json, syft-json (default: `cyclonedx-json`)
 - `cancel-in-progress` (optional): Cancel in-progress runs in the same concurrency group (default: `true`)
 - `concurrency-suffix` (optional): Suffix appended to the concurrency group as `-<suffix>` (default: empty)
+- `attach-to-release` (optional): Attach the SBOM to the GitHub release for the
+  current tag; only takes effect on tag refs (default: `false`)
 
 **Jobs:**
 
