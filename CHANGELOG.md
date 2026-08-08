@@ -8,6 +8,15 @@ This is a rolling release - changes are deployed continuously to `main`.
 
 ## 2026-08-08
 
+### Fixed
+
+- **cleanup-container-registry.yml** parses the Docker Hub retention day count
+  with the shell parameter expansion `${RETENTION_DAYS%d}` instead of
+  `echo … | sed 's/d$//'`, dropping two subprocesses per run. This resolves a
+  `shellcheck` `SC2001` finding that `actionlint` reports at error level and
+  that therefore fails the `Lint / Action Lint` job whenever a pull request
+  touches this line.
+
 ### Changed
 
 - **LICENSE** now states `Copyright (c) 2025-2026 Arillso` instead of the
