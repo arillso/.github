@@ -81,10 +81,18 @@ This repository provides shared Renovate presets for consumer repositories:
 
 | Preset | Purpose | Usage |
 |--------|---------|-------|
-| `renovate-base` | Base configuration for all repos | `github>arillso/.github:renovate-base` |
-| `renovate-go` | Go module management | `github>arillso/.github:renovate-go` |
-| `renovate-actions` | GitHub Actions dependencies | `github>arillso/.github:renovate-actions` |
-| `renovate-ansible` | Ansible Galaxy dependencies | `github>arillso/.github:renovate-ansible` |
+| `renovate-base` | Base configuration for all repos | `github>arillso/.github:renovate-base#<date-tag>` |
+| `renovate-go` | Go module management | `github>arillso/.github:renovate-go#<date-tag>` |
+| `renovate-actions` | GitHub Actions dependencies | `github>arillso/.github:renovate-actions#<date-tag>` |
+| `renovate-ansible` | Ansible Galaxy dependencies | `github>arillso/.github:renovate-ansible#<date-tag>` |
+
+Always append the `#<date-tag>` pin (a `YYYY-MM-DD` tag of this repository, see
+[templates/renovate.json](./templates/renovate.json) for a ready-to-copy
+example). An unpinned reference resolves to whatever is on `main` at the time,
+so a preset change reaches every consumer unreviewed. Renovate keeps the pin
+current on its own: the `customManager` in
+[renovate-base.json](./renovate-base.json) matches these refs and opens a PR
+when a newer date tag exists.
 
 ---
 
