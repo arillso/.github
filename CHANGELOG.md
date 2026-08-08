@@ -6,6 +6,26 @@ This is a rolling release - changes are deployed continuously to `main`.
 
 ---
 
+## 2026-08-08
+
+### Changed
+
+- **renovate-base.json** consumers within this repository
+  (`.github/renovate.json`, `renovate-actions.json`, `renovate-ansible.json`,
+  `renovate-go.json`) and all four `templates/renovate*.json` examples now pin
+  the `github>arillso/.github:…` reference to a `#YYYY-MM-DD` date tag. This
+  repository required every consumer to pin while extending its own presets
+  untagged, and the templates are the copy-paste source for new repositories,
+  so the unpinned form propagated from here. The `customManager` in
+  `renovate-base.json` only matches refs that already carry a date tag, so
+  these references were invisible to Renovate before and are now kept current
+  automatically.
+- **AGENTS.md**: The "Renovate Presets" usage table shows the pinned form and
+  states why the pin is required; it previously documented the unpinned
+  reference that this change removes elsewhere.
+
+---
+
 ## 2026-08-07
 
 ### Added
