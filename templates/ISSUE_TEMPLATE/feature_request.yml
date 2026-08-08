@@ -8,19 +8,12 @@ body:
       value: |
         Thanks for suggesting a new feature! Please describe your idea in detail.
 
-  - type: dropdown
-    id: role
+  - type: input
+    id: component
     attributes:
-      label: Which role is this for?
-      description: Select the role this feature would affect
-      options:
-        - Alloy (Grafana Alloy)
-        - DO (DigitalOcean Agent)
-        - Tailscale
-        - Collection (general)
-        - New role
-    validations:
-      required: true
+      label: Affected Component(s)
+      description: Which role, package, module, or workflow would this feature affect?
+      placeholder: e.g., alloy role, new role, cleanup workflow
 
   - type: dropdown
     id: type
@@ -65,9 +58,9 @@ body:
       placeholder: |
         - hosts: all
           roles:
-            - role: arillso.agent.alloy
+            - role: namespace.collection.role
               vars:
-                alloy_new_feature: true
+                some_new_option: true
 
   - type: textarea
     id: alternatives
@@ -100,5 +93,5 @@ body:
       options:
         - label: I have searched existing issues to avoid duplicates
           required: true
-        - label: This feature aligns with the collection's scope
+        - label: This feature aligns with the project's scope
           required: true
