@@ -81,7 +81,7 @@ jobs:
             https://hub.docker.com/v2/users/login/ | jq -r .token)
 
           # Parse retention days (remove 'd' suffix if present)
-          DAYS=$(echo "$RETENTION_DAYS" | sed 's/d$//')
+          DAYS="${RETENTION_DAYS%d}"
           CUTOFF_DATE=$(date -u -d "-${DAYS} days" +%Y-%m-%dT%H:%M:%S.%NZ 2>/dev/null \
             || date -u -v-${DAYS}d +%Y-%m-%dT%H:%M:%S.000000000Z)
 
