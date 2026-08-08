@@ -368,22 +368,35 @@ jobs:
     if: always() && !cancelled()
     steps:
       - name: Generate Security Report
+        env:
+          SEVERITY_THRESHOLD: ${{ inputs.severity-threshold }}
+          REPOSITORY: ${{ github.repository }}
+          REF_NAME: ${{ github.ref_name }}
+          TRIVY_CONFIG_RESULT: ${{ needs.trivy-config-scan.result }}
+          SCAN_TERRAFORM: ${{ inputs.scan-terraform && 'yes' || 'no' }}
+          TERRAFORM_RESULT: ${{ needs.terraform-security.result }}
+          SCAN_KUBERNETES: ${{ inputs.scan-kubernetes && 'yes' || 'no' }}
+          KUBERNETES_RESULT: ${{ needs.kubernetes-security.result }}
+          SCAN_ANSIBLE: ${{ inputs.scan-ansible && 'yes' || 'no' }}
+          ANSIBLE_RESULT: ${{ needs.ansible-security.result }}
         run: |
+          set -euo pipefail
           TIMESTAMP=$(date -u '+%Y-%m-%d %H:%M:%S UTC')
 
-          cat >> "$GITHUB_STEP_SUMMARY" << EOF
-          # Security — IaC Configuration
-
-          **Timestamp:** $TIMESTAMP
-          **Severity Threshold:** ${{ inputs.severity-threshold }}+
-          **Repository:** ${{ github.repository }} @ ${{ github.ref_name }}
-
-          | Scan | Enabled | Status |
-          | --- | --- | --- |
-          | Trivy Config | yes | ${{ needs.trivy-config-scan.result }} |
-          | Terraform | ${{ inputs.scan-terraform && 'yes' || 'no' }} | ${{ needs.terraform-security.result }} |
-          | Kubernetes | ${{ inputs.scan-kubernetes && 'yes' || 'no' }} | ${{ needs.kubernetes-security.result }} |
-          | Ansible | ${{ inputs.scan-ansible && 'yes' || 'no' }} | ${{ needs.ansible-security.result }} |
-
-          > Secret detection is handled separately by \`security-secrets.yml\`
-          EOF
+          # Values arrive via env: and are substituted by printf, not by the
+          # shell parsing the body — a value containing $(...) is written
+          # literally instead of being executed by the runner. The backticks in
+          # the format strings are literal Markdown, hence single quotes.
+          {
+            printf '# Security — IaC Configuration\n\n'
+            printf '**Timestamp:** %s\n' "$TIMESTAMP"
+            printf '**Severity Threshold:** %s+\n' "$SEVERITY_THRESHOLD"
+            printf '**Repository:** %s @ %s\n\n' "$REPOSITORY" "$REF_NAME"
+            printf '| Scan | Enabled | Status |\n| --- | --- | --- |\n'
+            printf '| Trivy Config | yes | %s |\n' "$TRIVY_CONFIG_RESULT"
+            printf '| Terraform | %s | %s |\n' "$SCAN_TERRAFORM" "$TERRAFORM_RESULT"
+            printf '| Kubernetes | %s | %s |\n' "$SCAN_KUBERNETES" "$KUBERNETES_RESULT"
+            printf '| Ansible | %s | %s |\n\n' "$SCAN_ANSIBLE" "$ANSIBLE_RESULT"
+            # shellcheck disable=SC2016  # backticks are literal Markdown here
+            printf '> Secret detection is handled separately by `security-secrets.yml`\n'
+          } >> "$GITHUB_STEP_SUMMARY"

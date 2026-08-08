@@ -167,19 +167,31 @@ jobs:
 
       - name: Determine Python version
         id: python_version
+        env:
+          ANSIBLE_VER: ${{ matrix.ansible-version }}
+          PYTHON_VERSION: ${{ inputs.python_version }}
         run: |
-          ANSIBLE_VER="${{ matrix.ansible-version }}"
+          set -euo pipefail
+          # Values arrive via env: and are read as shell variables, not
+          # substituted into the body by the workflow parser. The value also
+          # travels through $GITHUB_OUTPUT into setup-python, so it is pinned
+          # to a version shape before it is written out.
+          if [[ ! "$PYTHON_VERSION" =~ ^[0-9]+(\.[0-9]+){0,2}$ ]]; then
+            echo "::error::python_version must be a version like 3.12, got: $PYTHON_VERSION"
+            exit 1
+          fi
+
           if [[ "$ANSIBLE_VER" == "devel" ]]; then
-            echo "version=3.12" >> $GITHUB_OUTPUT
+            echo "version=3.12" >> "$GITHUB_OUTPUT"
           elif [[ "$ANSIBLE_VER" =~ ^stable-([0-9]+)\.([0-9]+)$ ]]; then
             MINOR="${BASH_REMATCH[2]}"
             if [[ "$MINOR" -ge 20 ]]; then
-              echo "version=3.12" >> $GITHUB_OUTPUT
+              echo "version=3.12" >> "$GITHUB_OUTPUT"
             else
-              echo "version=${{ inputs.python_version }}" >> $GITHUB_OUTPUT
+              echo "version=$PYTHON_VERSION" >> "$GITHUB_OUTPUT"
             fi
           else
-            echo "version=${{ inputs.python_version }}" >> $GITHUB_OUTPUT
+            echo "version=$PYTHON_VERSION" >> "$GITHUB_OUTPUT"
           fi
 
       - name: Set up Python

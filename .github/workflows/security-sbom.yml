@@ -193,49 +193,53 @@ jobs:
         continue-on-error: true
 
       - name: Generate SBOM Report
+        env:
+          ARTIFACT_TYPE: ${{ inputs.artifact-type }}
+          ARTIFACT_REF: ${{ inputs.artifact-ref }}
+          SBOM_FORMAT: ${{ inputs.sbom-format }}
+          GENERATE_SBOM_RESULT: ${{ needs.generate-sbom.result }}
         run: |
+          set -euo pipefail
           TIMESTAMP=$(date -u '+%Y-%m-%d %H:%M:%S UTC')
 
+          # Values arrive via env: and are read as shell variables, not
+          # substituted into the body by the workflow parser — a value
+          # containing $(...) stays part of a path instead of becoming code.
+          SBOM_FILE="./sbom/sbom-${ARTIFACT_TYPE}.json"
+
           # Count SBOM components
-          if [ -f "./sbom/sbom-${{ inputs.artifact-type }}.json" ]; then
-            COMPONENT_COUNT=$(jq '[.components[] // .packages[]] | length' "./sbom/sbom-${{ inputs.artifact-type }}.json" 2>/dev/null || echo "unknown")
+          if [ -f "$SBOM_FILE" ]; then
+            COMPONENT_COUNT=$(jq '[.components[] // .packages[]] | length' "$SBOM_FILE" 2>/dev/null || echo "unknown")
           else
             COMPONENT_COUNT="N/A"
           fi
 
-          cat >> "$GITHUB_STEP_SUMMARY" << EOF
-          # 📋 SBOM Generation Report
-
-          **Timestamp:** $TIMESTAMP
-          **Artifact Type:** ${{ inputs.artifact-type }}
-          **Artifact Reference:** \`${{ inputs.artifact-ref }}\`
-
-          ## SBOM Details
-
-          | Property | Value |
-          |----------|-------|
-          | Format | ${{ inputs.sbom-format }} |
-          | Components/Packages | $COMPONENT_COUNT |
-          | Status | ${{ needs.generate-sbom.result }} |
-
-          ## What is an SBOM?
-
-          A Software Bill of Materials (SBOM) is a complete inventory of all components,
-          libraries, and dependencies in your software artifact. It provides:
-
-          - 🔍 **Transparency**: Know exactly what's in your software
-          - 🛡️ **Security**: Identify vulnerable dependencies quickly
-          - 📜 **Compliance**: Meet regulatory requirements
-          - 🔗 **Supply Chain**: Track software provenance
-
-          ## Usage
-
-          The SBOM artifact is available for download and can be:
-          - Uploaded to vulnerability scanners
-          - Stored in artifact repositories
-          - Attached to GitHub releases
-          - Used for compliance documentation
-
-          ---
-          *SBOM generation completed*
-          EOF
+          # printf substitutes the values, so they are written literally
+          # instead of being evaluated. Backticks below are literal Markdown.
+          {
+            printf '# 📋 SBOM Generation Report\n\n'
+            printf '**Timestamp:** %s\n' "$TIMESTAMP"
+            printf '**Artifact Type:** %s\n' "$ARTIFACT_TYPE"
+            # shellcheck disable=SC2016  # backticks are literal Markdown here
+            printf '**Artifact Reference:** `%s`\n\n' "$ARTIFACT_REF"
+            printf '## SBOM Details\n\n'
+            printf '| Property | Value |\n|----------|-------|\n'
+            printf '| Format | %s |\n' "$SBOM_FORMAT"
+            printf '| Components/Packages | %s |\n' "$COMPONENT_COUNT"
+            printf '| Status | %s |\n\n' "$GENERATE_SBOM_RESULT"
+            printf '## What is an SBOM?\n\n'
+            printf 'A Software Bill of Materials (SBOM) is a complete inventory of all components,\n'
+            printf 'libraries, and dependencies in your software artifact. It provides:\n\n'
+            printf -- '- 🔍 **Transparency**: Know exactly what'"'"'s in your software\n'
+            printf -- '- 🛡️ **Security**: Identify vulnerable dependencies quickly\n'
+            printf -- '- 📜 **Compliance**: Meet regulatory requirements\n'
+            printf -- '- 🔗 **Supply Chain**: Track software provenance\n\n'
+            printf '## Usage\n\n'
+            printf 'The SBOM artifact is available for download and can be:\n'
+            printf -- '- Uploaded to vulnerability scanners\n'
+            printf -- '- Stored in artifact repositories\n'
+            printf -- '- Attached to GitHub releases\n'
+            printf -- '- Used for compliance documentation\n\n'
+            printf -- '---\n'
+            printf '*SBOM generation completed*\n'
+          } >> "$GITHUB_STEP_SUMMARY"
