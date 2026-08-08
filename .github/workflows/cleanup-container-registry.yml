@@ -150,27 +150,35 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
 
-      - name: Build summary arguments
-        id: build_args
-        run: |
-          ARGS=""
-          if [ "${{ inputs.enable_dockerhub }}" == "true" ]; then
-            ARGS="DockerHub=${{ needs.docker-hub-cleanup.result }} "
-          fi
-          ARGS="${ARGS}GHCR=${{ needs.ghcr-cleanup.result }}"
-          echo "args=$ARGS" >> $GITHUB_OUTPUT
-
       - name: Execute cleanup summary script
+        env:
+          ENABLE_DOCKERHUB: ${{ inputs.enable_dockerhub }}
+          DOCKERHUB_RESULT: ${{ needs.docker-hub-cleanup.result }}
+          GHCR_RESULT: ${{ needs.ghcr-cleanup.result }}
         run: |
+          set -euo pipefail
+          # Values arrive via env: and are read as shell variables, not
+          # substituted into the body by the workflow parser. The arguments are
+          # built as an array and passed quoted, so a value carrying a space or
+          # $(...) stays one argument instead of being re-split or executed.
+          # The previous $GITHUB_OUTPUT relay between two steps is gone: it only
+          # rebuilt this same string one step earlier.
+          ARGS=()
+          if [ "$ENABLE_DOCKERHUB" == "true" ]; then
+            ARGS+=("DockerHub=$DOCKERHUB_RESULT")
+          fi
+          ARGS+=("GHCR=$GHCR_RESULT")
+
           if [ -f "./.github/scripts/cleanup-summary.sh" ]; then
-            ./.github/scripts/cleanup-summary.sh ${{ steps.build_args.outputs.args }}
+            ./.github/scripts/cleanup-summary.sh "${ARGS[@]}"
           else
-            echo "# Cleanup Summary" > cleanup-report.md
-            echo "" >> cleanup-report.md
-            if [ "${{ inputs.enable_dockerhub }}" == "true" ]; then
-              echo "- Docker Hub: ${{ needs.docker-hub-cleanup.result }}" >> cleanup-report.md
-            fi
-            echo "- GHCR: ${{ needs.ghcr-cleanup.result }}" >> cleanup-report.md
+            {
+              printf '# Cleanup Summary\n\n'
+              if [ "$ENABLE_DOCKERHUB" == "true" ]; then
+                printf -- '- Docker Hub: %s\n' "$DOCKERHUB_RESULT"
+              fi
+              printf -- '- GHCR: %s\n' "$GHCR_RESULT"
+            } > cleanup-report.md
           fi
 
       - name: Upload Cleanup Report

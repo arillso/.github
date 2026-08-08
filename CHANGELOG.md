@@ -10,6 +10,18 @@ This is a rolling release - changes are deployed continuously to `main`.
 
 ### Fixed
 
+- **ci-lint.yml**, **ci-ansible-collection.yml**,
+  **cleanup-container-registry.yml**, **security-config.yml**,
+  **security-deps.yml** and **security-sbom.yml** pass caller inputs into
+  `run:` bodies through `env:` instead of interpolating `${{ inputs.* }}`
+  directly. The workflow parser substitutes such a reference before the shell
+  parses the line, so a caller-supplied value was shell source on the runner
+  rather than an argument. Step summaries build their output with `printf`
+  instead of unquoted heredocs, which expand a substituted value the same way,
+  and argument lists are built as quoted arrays. `python_version` is
+  additionally constrained to a version shape before it is written to
+  `$GITHUB_OUTPUT`, because it travels from there into `setup-python` in a
+  second step.
 - **cleanup-container-registry.yml** parses the Docker Hub retention day count
   with the shell parameter expansion `${RETENTION_DAYS%d}` instead of
   `echo … | sed 's/d$//'`, dropping two subprocesses per run. This resolves a

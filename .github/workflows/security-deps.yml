@@ -83,10 +83,15 @@ jobs:
       - name: Check Go licenses
         if: inputs.enable-license-check
         working-directory: ${{ inputs.working-directory }}
+        env:
+          ALLOWED_LICENSES: ${{ inputs.allowed-licenses }}
         run: |
+          # Values arrive via env: and are read as shell variables, not
+          # substituted into the body by the workflow parser — a caller value
+          # containing $(...) stays a license list instead of becoming code.
           go install github.com/google/go-licenses@latest
           echo "Checking Go dependency licenses..."
-          go-licenses check ./... --allowed_licenses=${{ inputs.allowed-licenses }} 2>&1 | tee go-licenses.txt || true
+          go-licenses check ./... --allowed_licenses="$ALLOWED_LICENSES" 2>&1 | tee go-licenses.txt || true
           go-licenses csv ./... > go-licenses.csv 2>&1 || true
 
       - name: Upload audit results
@@ -108,34 +113,39 @@ jobs:
     if: always() && !cancelled()
     steps:
       - name: Generate Security Report
+        env:
+          LICENSE_CHECK: ${{ inputs.enable-license-check && 'Enabled' || 'Disabled' }}
+          DEPENDENCY_REVIEW_RESULT: ${{ needs.dependency-review.result }}
+          GO_AUDIT_RESULT: ${{ needs.go-audit.result }}
+          ALLOWED_LICENSES: ${{ inputs.allowed-licenses }}
+          DENIED_LICENSES: ${{ inputs.denied-licenses }}
+          FAIL_ON_LICENSE_VIOLATION: ${{ inputs.fail-on-license-violation }}
         run: |
+          set -euo pipefail
           TIMESTAMP=$(date -u '+%Y-%m-%d %H:%M:%S UTC')
 
-          cat >> "$GITHUB_STEP_SUMMARY" << EOF
-          # Dependencies & License Compliance Report
-
-          **Timestamp:** $TIMESTAMP
-          **License Check:** ${{ inputs.enable-license-check && 'Enabled' || 'Disabled' }}
-
-          ## Scan Results
-
-          | Component | Status |
-          |-----------|--------|
-          | Dependency Review | ${{ needs.dependency-review.result }} |
-          | Go Audit | ${{ needs.go-audit.result }} |
-
-          ## Tools Used
-
-          - **govulncheck**: Official Go vulnerability scanner
-          - **go-licenses**: Google license compliance tool
-          - **GitHub Dependency Review**: Native GitHub PR dependency analysis
-
-          ## License Configuration
-
-          **Allowed Licenses:** \`${{ inputs.allowed-licenses }}\`
-          **Denied Licenses:** \`${{ inputs.denied-licenses }}\`
-          **Fail on Violation:** ${{ inputs.fail-on-license-violation }}
-
-          ---
-          *Dependency security and license compliance analysis completed*
-          EOF
+          # Values arrive via env: and are substituted by printf, not by the
+          # shell parsing the body — a value containing $(...) is written
+          # literally instead of being executed by the runner. The backticks in
+          # the format strings are literal Markdown, hence single quotes.
+          {
+            printf '# Dependencies & License Compliance Report\n\n'
+            printf '**Timestamp:** %s\n' "$TIMESTAMP"
+            printf '**License Check:** %s\n\n' "$LICENSE_CHECK"
+            printf '## Scan Results\n\n'
+            printf '| Component | Status |\n|-----------|--------|\n'
+            printf '| Dependency Review | %s |\n' "$DEPENDENCY_REVIEW_RESULT"
+            printf '| Go Audit | %s |\n\n' "$GO_AUDIT_RESULT"
+            printf '## Tools Used\n\n'
+            printf -- '- **govulncheck**: Official Go vulnerability scanner\n'
+            printf -- '- **go-licenses**: Google license compliance tool\n'
+            printf -- '- **GitHub Dependency Review**: Native GitHub PR dependency analysis\n\n'
+            printf '## License Configuration\n\n'
+            # shellcheck disable=SC2016  # backticks are literal Markdown here
+            printf '**Allowed Licenses:** `%s`\n' "$ALLOWED_LICENSES"
+            # shellcheck disable=SC2016  # backticks are literal Markdown here
+            printf '**Denied Licenses:** `%s`\n' "$DENIED_LICENSES"
+            printf '**Fail on Violation:** %s\n\n' "$FAIL_ON_LICENSE_VIOLATION"
+            printf -- '---\n'
+            printf '*Dependency security and license compliance analysis completed*\n'
+          } >> "$GITHUB_STEP_SUMMARY"

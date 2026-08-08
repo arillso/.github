@@ -74,9 +74,16 @@ jobs:
         run: pip install yamllint
 
       - name: Run yamllint
+        env:
+          YAMLLINT_STRICT: ${{ inputs.yamllint_strict }}
+          YAMLLINT_CONFIG: ${{ inputs.yamllint_config }}
         run: |
-          ARGS=""
-          if [ "${{ inputs.yamllint_strict }}" == "true" ]; then
-            ARGS="--strict"
+          set -euo pipefail
+          # Values arrive via env: and are read as shell variables, not
+          # substituted into the body by the workflow parser — a caller value
+          # containing $(...) stays a config path instead of becoming code.
+          ARGS=()
+          if [ "$YAMLLINT_STRICT" == "true" ]; then
+            ARGS+=("--strict")
           fi
-          yamllint -c ${{ inputs.yamllint_config }} $ARGS .
+          yamllint -c "$YAMLLINT_CONFIG" "${ARGS[@]}" .
