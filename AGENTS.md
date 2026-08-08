@@ -349,22 +349,32 @@ specific release.
 
 ---
 
-## Maintenance Tasks
+## Automated Maintenance
 
-### Weekly
+Maintenance of this repository is automated. There is no manual review
+cadence — what is not listed here is not monitored.
 
-- Review Renovate PRs for dependency updates
-- Check consumer repository workflow runs
+### Renovate
 
-### Monthly
+Configured in `renovate-base.json`:
 
-- Review workflow execution times
-- Update documentation
+- Non-major updates (minor, patch, pin, digest) are grouped and automerged;
+  major updates require manual review. Exception: for pre-1.0 dependencies
+  (`0.x`), minor updates also require manual review.
+- GitHub Actions are digest-pinned and automerged, which keeps action
+  versions current without a manual audit.
+- Vulnerability alerts run on their own schedule (`at any time`) instead of
+  waiting for the regular update window.
+- Updates run in a daily window (before 6am, `Europe/Zurich`); open work is
+  listed on the Dependency Dashboard issue.
 
-### Quarterly
+### Weekly Security Scan
 
-- Review all workflows for deprecations
-- Security audit of action versions
+`.github/workflows/self-weekly-security.yml` runs Mondays at 02:00 UTC and on
+`workflow_dispatch`. It calls `security-config.yml` and `security-secrets.yml`
+with no inputs, so only the Trivy IaC config scan runs — the opt-in Terraform,
+Kubernetes and Ansible scans stay off. It does **not** audit action versions —
+that is Renovate's digest pinning above.
 
 ---
 
