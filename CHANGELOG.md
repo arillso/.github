@@ -6,6 +6,23 @@ This is a rolling release - changes are deployed continuously to `main`.
 
 ---
 
+## 2026-08-09
+
+### Changed
+
+- **self-pull-request.yml**, **self-merge.yml** and **self-weekly-security.yml**
+  are renamed to **pull-request.yml**, **merge.yml** and
+  **weekly-security.yml**. The repository standard names these three files
+  without a prefix, and an audit looks them up by exact name — under the old
+  names it reported all three as missing rather than as present under a
+  different name. The `self-` prefix was introduced to separate this repo's own
+  CI from the reusables it ships, but no reusable here occupies any of the three
+  names, so the prefix distinguished nothing. Triggers, permissions and job
+  bodies are unchanged; the `readme-sync` job already discriminated on
+  `workflow_call` rather than on the file name.
+
+---
+
 ## 2026-08-08
 
 ### Fixed

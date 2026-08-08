@@ -61,9 +61,9 @@ jobs:
   # `.github/workflows/README.md`, but nothing enforced it, so the two drifted.
   # The check is bidirectional: a reusable without a section, and a section
   # without a file, both fail. Scope is the reusables only — the README is
-  # titled "Reusable Workflows", and the `self-*.yml` files are this repo's own
-  # CI rather than something a consumer can call, so `workflow_call` is the
-  # discriminator rather than a hardcoded ignore list.
+  # titled "Reusable Workflows", and this repo's own CI workflows are not
+  # something a consumer can call, so `workflow_call` is the discriminator
+  # rather than a hardcoded ignore list.
   readme-sync:
     name: Workflow README Sync
     runs-on: ubuntu-latest
