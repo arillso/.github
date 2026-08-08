@@ -359,7 +359,8 @@ cadence — what is not listed here is not monitored.
 Configured in `renovate-base.json`:
 
 - Non-major updates (minor, patch, pin, digest) are grouped and automerged;
-  major updates require manual review.
+  major updates require manual review. Exception: for pre-1.0 dependencies
+  (`0.x`), minor updates also require manual review.
 - GitHub Actions are digest-pinned and automerged, which keeps action
   versions current without a manual audit.
 - Vulnerability alerts run on their own schedule (`at any time`) instead of
@@ -370,9 +371,10 @@ Configured in `renovate-base.json`:
 ### Weekly Security Scan
 
 `.github/workflows/self-weekly-security.yml` runs Mondays at 02:00 UTC and on
-`workflow_dispatch`. It calls `security-config.yml` (Trivy config, Terraform
-and Kubernetes manifest scans) and `security-secrets.yml`. It does **not**
-audit action versions — that is Renovate's digest pinning above.
+`workflow_dispatch`. It calls `security-config.yml` and `security-secrets.yml`
+with no inputs, so only the Trivy IaC config scan runs — the opt-in Terraform,
+Kubernetes and Ansible scans stay off. It does **not** audit action versions —
+that is Renovate's digest pinning above.
 
 ---
 
