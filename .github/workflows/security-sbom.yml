@@ -49,6 +49,10 @@ on:
           Whether to attach the SBOM to the GitHub release for the current tag.
           Only takes effect on tag refs, because without a tag there is no
           release to attach to. The Actions artifact upload is unaffected.
+          Run this after the job that creates the release (`needs:`), never as
+          an independent tag-triggered workflow: the upload creates a release
+          for the tag if none exists yet, which would race the dedicated
+          release job and leave a partially populated release behind.
 
 permissions:
   contents: write
@@ -145,16 +149,25 @@ jobs:
         env:
           SBOM_FILE: ${{ steps.sbom-output.outputs.file }}
           SBOM_FORMAT: ${{ inputs.sbom-format }}
+          ARTIFACT_TYPE: ${{ inputs.artifact-type }}
         run: |
-          case "$SBOM_FORMAT" in
-            cyclonedx-json) ASSET="sbom.cdx.json" ;;
-            spdx-json) ASSET="sbom.spdx.json" ;;
-            syft-json) ASSET="sbom.syft.json" ;;
-            *)
-              echo "::error::Unknown SBOM format: $SBOM_FORMAT"
-              exit 1
-              ;;
-          esac
+          # `cyclonedx-gomod mod -json` emits CycloneDX whatever `sbom-format`
+          # says, so the go-binary name follows the generator, not the input —
+          # a release asset carries its name at a stable public URL and must
+          # not claim a format it does not contain.
+          if [ "$ARTIFACT_TYPE" = "go-binary" ]; then
+            ASSET="sbom.cdx.json"
+          else
+            case "$SBOM_FORMAT" in
+              cyclonedx-json) ASSET="sbom.cdx.json" ;;
+              spdx-json) ASSET="sbom.spdx.json" ;;
+              syft-json) ASSET="sbom.syft.json" ;;
+              *)
+                echo "::error::Unknown SBOM format: $SBOM_FORMAT"
+                exit 1
+                ;;
+            esac
+          fi
 
           cp "$SBOM_FILE" "$ASSET"
           echo "path=$ASSET" >> "$GITHUB_OUTPUT"

@@ -360,7 +360,11 @@ jobs:
 - `cancel-in-progress` (optional): Cancel in-progress runs in the same concurrency group (default: `true`)
 - `concurrency-suffix` (optional): Suffix appended to the concurrency group as `-<suffix>` (default: empty)
 - `attach-to-release` (optional): Attach the SBOM to the GitHub release for the
-  current tag; only takes effect on tag refs (default: `false`)
+  current tag; only takes effect on tag refs (default: `false`). Run it after
+  the release job via `needs:` — as an independent tag-triggered workflow it
+  would create the release itself and race the dedicated release job. For
+  `artifact-type: go-binary` the asset is always named `sbom.cdx.json`, since
+  `cyclonedx-gomod` emits CycloneDX regardless of `sbom-format`
 
 **Jobs:**
 
