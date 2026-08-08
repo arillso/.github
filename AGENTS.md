@@ -378,7 +378,7 @@ Configured in `renovate-base.json`:
 
 ### Weekly Security Scan
 
-`.github/workflows/self-weekly-security.yml` runs Mondays at 02:00 UTC and on
+`.github/workflows/weekly-security.yml` runs Mondays at 02:00 UTC and on
 `workflow_dispatch`. It calls `security-config.yml` and `security-secrets.yml`
 with no inputs, so only the Trivy IaC config scan runs — the opt-in Terraform,
 Kubernetes and Ansible scans stay off. It does **not** audit action versions —

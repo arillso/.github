@@ -569,18 +569,19 @@ jobs:
 
 ## This Repository's Own CI
 
-The `self-*` workflows are **not reusable** — they have no `workflow_call`
+The workflows below are **not reusable** — they have no `workflow_call`
 trigger and cannot be called from another repository. They run this
 repository's own CI by invoking the reusables above through a local `./` path,
-so the workflows consumers depend on are exercised here before they ship.
+so the workflows consumers depend on are exercised here before they ship. Their
+names follow the event-focused set every Arillso repository uses.
 
 | Workflow | Trigger | Purpose |
 |----------|---------|---------|
-| `self-pull-request.yml` | `pull_request` | Calls `ci-lint.yml`, `ai-claude-review.yml` and `security-code.yml` |
-| `self-merge.yml` | `push` to `main` | Moves the `YYYY-MM-DD` date tag to the newest commit, forward-only |
-| `self-weekly-security.yml` | Monday 02:00 UTC | Calls `security-config.yml` and `security-secrets.yml` |
+| `pull-request.yml` | `pull_request` | Calls `ci-lint.yml`, `ai-claude-review.yml` and `security-code.yml` |
+| `merge.yml` | `push` to `main` | Moves the `YYYY-MM-DD` date tag to the newest commit, forward-only |
+| `weekly-security.yml` | Monday 02:00 UTC | Calls `security-config.yml` and `security-secrets.yml` |
 
-Consumer repositories pin these date tags (`@2026-08-07`), so `self-merge.yml`
+Consumer repositories pin these date tags (`@2026-08-07`), so `merge.yml`
 is what makes a merged change reachable — see [General Usage](#general-usage).
 
 ---
