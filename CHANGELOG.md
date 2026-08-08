@@ -10,6 +10,9 @@ This is a rolling release - changes are deployed continuously to `main`.
 
 ### Changed
 
+- **LICENSE** now states `Copyright (c) 2025-2026 Arillso` instead of the
+  single year `2025`, matching the canonical `YEAR-YEAR` range used across the
+  arillso repositories.
 - **renovate-base.json** consumers within this repository
   (`.github/renovate.json`, `renovate-actions.json`, `renovate-ansible.json`,
   `renovate-go.json`) and all four `templates/renovate*.json` examples now pin
