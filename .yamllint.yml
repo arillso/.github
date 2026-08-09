@@ -1,0 +1,9 @@
+---
+# Extends the org template this repo ships, overriding only line-length:
+# ai-claude-review.yml carries a 515-char `--allowedTools` line that cannot be
+# folded (YAML block folding inserts spaces, corrupting the comma-separated
+# tool names). The template's 500-char limit stays the org default.
+extends: templates/.yamllint.yml
+rules:
+    line-length:
+        max: 600

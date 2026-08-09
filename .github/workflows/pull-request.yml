@@ -29,12 +29,13 @@ jobs:
       # The embedded `run:` scripts in these workflows are only checked when
       # shellcheck runs alongside actionlint.
       enable_shellcheck: true
-      # Off for now: `ai-claude-review.yml` carries a 515-char `--allowedTools`
-      # line that trips the 500-char limit in templates/.yamllint.yml. The list
-      # is comma-separated and cannot be folded — YAML block folding inserts a
-      # space after each newline, which would corrupt the tool names. Enable
-      # once that line is restructured or the template's limit is revisited.
-      enable_yamllint: false
+      # Runs against the repo's own `.yamllint.yml`, which extends
+      # templates/.yamllint.yml and raises line-length to 600 — the only
+      # override. It exists for the 515-char `--allowedTools` line in
+      # `ai-claude-review.yml`, which is comma-separated and cannot be folded:
+      # YAML block folding inserts a space after each newline, corrupting the
+      # tool names. The org template keeps its 500-char limit.
+      enable_yamllint: true
 
   review:
     name: Code Review
