@@ -1,6 +1,6 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
-  "description": "Alpine apk pin management for Dockerfiles via repology. Covers both '>=' lower-bound and '=' exact pins.",
+  "description": "Alpine apk pin management for Dockerfiles via repology. Covers both '>=' lower-bound and '=' exact pins. The Alpine release below is hard-coded and nothing bumps it: when consumers move to a newer Alpine base image, 'alpine_3_24' has to be raised here in both the depNameTemplate and the matchPackageNames rule, or repology keeps resolving against the old branch.",
   "customManagers": [
     {
       "customType": "regex",
@@ -9,7 +9,7 @@
       "matchStringsStrategy": "recursive",
       "matchStrings": [
         "apk add(?:[^\\n]*\\\\\\n)*[^\\n]*",
-        "\"?(?<depName>[a-z0-9][a-z0-9._-]*)(?:>=|=)(?<currentValue>\\d[a-zA-Z0-9._]*-r\\d+)\"?"
+        "\"?(?<depName>[a-z0-9][a-z0-9._+-]*)(?:>=|=)(?<currentValue>\\d[a-zA-Z0-9._]*-r\\d+)\"?"
       ],
       "depNameTemplate": "alpine_3_24/{{{depName}}}",
       "datasourceTemplate": "repology",

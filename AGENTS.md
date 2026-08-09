@@ -32,7 +32,7 @@ This repository contains organization-wide defaults that GitHub automatically ap
 **Current Statistics**:
 
 - **Reusable Workflows**: See [workflows/](./.github/workflows/)
-- **Renovate Presets**: 4 (base, go, actions, ansible)
+- **Renovate Presets**: 5 (base, go, actions, ansible, alpine)
 - **Project Types**: Ansible Collections, Go CLI tools, GitHub Actions
 
 ---
