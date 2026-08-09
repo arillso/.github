@@ -61,13 +61,31 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
 
+      # A job-level `if: hashFiles('go.mod') != ''` cannot gate this job:
+      # job conditions are evaluated before any checkout, so hashFiles sees an
+      # empty workspace and would skip the audit in Go repos too. Detection has
+      # to happen after checkout, and every Go step keys off this output.
+      - name: Detect Go module
+        id: detect-go
+        working-directory: ${{ inputs.working-directory }}
+        run: |
+          set -euo pipefail
+          if [ -f go.mod ]; then
+            echo "present=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "present=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::No go.mod found, skipping Go audit"
+          fi
+
       - name: Setup Go
+        if: steps.detect-go.outputs.present == 'true'
         uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
-          go-version-file: 'go.mod'
+          go-version-file: ${{ inputs.working-directory }}/go.mod
           cache: true
 
       - name: Run govulncheck
+        if: steps.detect-go.outputs.present == 'true'
         working-directory: ${{ inputs.working-directory }}
         run: |
           go install golang.org/x/vuln/cmd/govulncheck@latest
@@ -81,7 +99,7 @@ jobs:
           fi
 
       - name: Check Go licenses
-        if: inputs.enable-license-check
+        if: steps.detect-go.outputs.present == 'true' && inputs.enable-license-check
         working-directory: ${{ inputs.working-directory }}
         env:
           ALLOWED_LICENSES: ${{ inputs.allowed-licenses }}
