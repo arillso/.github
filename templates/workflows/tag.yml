@@ -117,11 +117,19 @@ jobs:
 
       - name: Extract changelog
         id: changelog
+        env:
+          VERSION: ${{ needs.prepare.outputs.version }}
         run: |
-          VERSION="${{ needs.prepare.outputs.version }}"
-
-          if grep -q "## \[${VERSION}\]" CHANGELOG.md; then
-              awk '/^## \['"${VERSION}"'\]/{flag=1; next} /^## \[.*\]/ && flag {exit} flag' CHANGELOG.md > release_notes.md
+          # The tag value reaches the shell via env:, never via workflow
+          # expression interpolation into the script body. grep -F and awk -v
+          # keep it out of pattern and program text, so metacharacters stay
+          # literal.
+          if grep -qF "## [${VERSION}]" CHANGELOG.md; then
+              awk -v version="${VERSION}" '
+                  index($0, "## [" version "]") == 1 {flag=1; next}
+                  /^## \[.*\]/ && flag {exit}
+                  flag
+              ' CHANGELOG.md > release_notes.md
               echo "found=true" >> "$GITHUB_OUTPUT"
           else
               echo "Release ${VERSION}" > release_notes.md
