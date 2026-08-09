@@ -130,3 +130,26 @@ jobs:
             exit 1
           fi
           echo "GUARD-PASS"
+
+  # A `${{ inputs.* }}` reference in a `run:` body is substituted before the
+  # shell parses the line, so a caller-supplied value would be shell source on
+  # the runner rather than an argument. The guard asserts structurally that no
+  # reusable workflow here does that, and that no heredoc delimiter is left
+  # unquoted — an unquoted body expands a substituted value the same way.
+  workflow-input-injection:
+    name: Workflow Input Injection Guard
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      # The guard derives its set from the parsed `on:` mapping rather than
+      # grepping for the bare token, because `workflow_call` also appears in
+      # prose comments — hence a YAML parser rather than a plain shell scan.
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7
+        with:
+          python-version: '3.x'
+      - name: Install pyyaml
+        run: python3 -m pip install --disable-pip-version-check pyyaml
+      - name: Assert caller inputs reach shell bodies through env
+        run: scripts/tests/test-workflow-input-injection.sh
