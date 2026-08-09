@@ -79,10 +79,8 @@ body:
     id: ansible-version
     attributes:
       label: Ansible Version
-      description: Output of `ansible --version`
+      description: Output of `ansible --version` (only if the component uses Ansible)
       placeholder: e.g., ansible [core 2.15.0]
-    validations:
-      required: true
 
   - type: dropdown
     id: os
@@ -97,6 +95,8 @@ body:
         - Debian 12
         - RHEL/CentOS 8
         - RHEL/CentOS 9
+        - macOS
+        - Windows
         - Other (please specify in description)
     validations:
       required: true
@@ -118,5 +118,5 @@ body:
           required: true
         - label: I have provided all requested information
           required: true
-        - label: I am using a supported platform and Ansible version
+        - label: I am using a supported platform and version
           required: true
