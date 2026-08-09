@@ -32,6 +32,10 @@ jobs:
 
 - `galaxy_api_key` (required): Ansible Galaxy API key
 
+**Jobs:**
+
+- publish (build collection, publish to Galaxy, create GitHub Release)
+
 ---
 
 #### `ci-ansible-collection.yml`
@@ -237,6 +241,10 @@ jobs:
 - `language` (optional): Language to analyze (default: `go`)
 - `cron_schedule` (optional): Cron schedule (default: `0 6 * * 1`)
 
+**Jobs:**
+
+- analyze (CodeQL init, autobuild, analysis)
+
 ---
 
 #### `security-trivy.yml`
@@ -275,6 +283,12 @@ jobs:
 - `build_docker_image` (optional): Build Docker image before scan (default: `false`)
 - `dockerfile_path` (optional): Dockerfile path (default: `Dockerfile`)
 - `image_name` (optional): Image name to build (default: `trivy-scan-image`)
+
+**Jobs:**
+
+- build-image (only when `build_docker_image` and `scan_type: image`)
+- trivy-scan (vulnerability scan, uploads SARIF to GitHub Security)
+- secret-scan (TruffleHog, only when `enable_secret_scan`)
 
 ---
 
@@ -436,6 +450,12 @@ jobs:
 
 - `dockerhub_token` (optional): Docker Hub token (required if `enable_dockerhub` is true)
 
+**Jobs:**
+
+- docker-hub-cleanup (only when `enable_dockerhub`)
+- ghcr-cleanup (delete old untagged images)
+- cleanup-summary (report artifact, only when `enable_summary`)
+
 ---
 
 #### `security-deps.yml`
@@ -529,6 +549,10 @@ jobs:
 
 - `CLAUDE_CODE_OAUTH_TOKEN` (required): Claude Code OAuth token
 
+**Jobs:**
+
+- claude (runs Claude Code on @claude mentions)
+
 ---
 
 #### `ai-claude-review.yml`
@@ -564,6 +588,10 @@ jobs:
 **Secrets:**
 
 - `CLAUDE_CODE_OAUTH_TOKEN` (required): Claude Code OAuth token
+
+**Jobs:**
+
+- claude-review (first pass full review, follow-up pushes delta only)
 
 ---
 
