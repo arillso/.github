@@ -8,6 +8,21 @@ This is a rolling release - changes are deployed continuously to `main`.
 
 ## 2026-08-09
 
+### Added
+
+- **pull-request.yml** gains a `workflow-input-injection` job backed by
+  `scripts/tests/test-workflow-input-injection.sh`. A `${{ inputs.* }}`
+  reference inside a `run:` body is substituted before the shell parses the
+  line, so a caller-supplied value is shell source on the runner rather than an
+  argument; an unquoted heredoc expands a substituted value the same way. The
+  check is structural on the YAML, so a regression fails in CI instead of on a
+  consumer's runner. The scanned set is derived from the `workflow_call`
+  trigger by `scripts/list-reusable-workflows.sh` rather than maintained as a
+  list — a workflow missing from an allow-list is unchecked by default, and the
+  reason for its absence tends to be the very defect the guard exists to catch.
+  The job is red until the unquoted heredoc in `security-secrets.yml` is
+  quoted, which is tracked as its own change.
+
 ### Changed
 
 - **self-pull-request.yml**, **self-merge.yml** and **self-weekly-security.yml**
