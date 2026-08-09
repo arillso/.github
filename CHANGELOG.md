@@ -10,6 +10,16 @@ This is a rolling release - changes are deployed continuously to `main`.
 
 ### Changed
 
+- **ai-claude-review.yml** no longer lets the review agent submit a formal
+  review. `Bash(gh pr review:*)` and `Bash(gh api repos/*/pulls/*/reviews*)` are
+  gone from `--allowedTools`, and the prompt posts its verdict via
+  `gh pr comment` instead of `--approve`/`--request-changes`. With `CODEOWNERS`
+  global to a single owner, the agent is the only independent check before a
+  merge, so an agent that could approve could clear that check by itself; the
+  verdict is now advisory and a human decides. Follow-up mode derives the
+  last-pass SHA from the agent's inline comments, since it leaves no review
+  entries anymore.
+
 - **self-pull-request.yml**, **self-merge.yml** and **self-weekly-security.yml**
   are renamed to **pull-request.yml**, **merge.yml** and
   **weekly-security.yml**. The repository standard names these three files
