@@ -144,7 +144,12 @@ when a newer date tag exists.
 1. **Naming**: Follow kebab-case convention (`category-purpose.yml`)
 2. **Security**: Pin all actions to SHA with version comment
 3. **Testing**: Test in a consumer repository before merging
-4. **README**: Update [workflows/README.md](./.github/workflows/README.md) with usage documentation
+4. **README**: Update [workflows/README.md](./.github/workflows/README.md) with usage documentation. Every
+   section carries a `**Jobs:**` list, regardless of job count — a single-job
+   workflow gets a one-entry list. The `readme-sync` job in
+   [pull-request.yml](./.github/workflows/pull-request.yml) enforces this;
+   omitting the list because "there is only one job" is what made the README
+   drift before.
 5. **CHANGELOG**: Document changes in [CHANGELOG.md](./CHANGELOG.md)
 
 ### Modifying Existing Workflows

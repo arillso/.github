@@ -65,6 +65,11 @@ jobs:
   # titled "Reusable Workflows", and this repo's own CI workflows are not
   # something a consumer can call, so `workflow_call` is the discriminator
   # rather than a hardcoded ignore list.
+  #
+  # The `**Jobs:**` assertion covers a second drift: the list was present in
+  # some sections and absent in others, because "only one job" read as a reason
+  # to omit it. `AGENTS.md` now requires the list unconditionally, so a missing
+  # one is a failure rather than a judgement call.
   readme-sync:
     name: Workflow README Sync
     runs-on: ubuntu-latest
@@ -82,6 +87,20 @@ jobs:
             grep -q '^ *workflow_call:' "$f" || continue
             grep -qF "#### \`${name}\`" "$README" || {
               echo "::error file=$README::missing section for $name"
+              errors=1
+            }
+            # Scoped to the one section: start at its `####` heading, stop at
+            # the next `####`/`###`/`##` so a neighbour's list cannot satisfy
+            # this section. The verdict is a flag rather than an in-rule
+            # `exit 0`, because `exit` still runs `END`, whose status would
+            # overwrite it.
+            awk -v want="#### \`${name}\`" '
+              $0 == want { inside = 1; next }
+              inside && /^#{2,4} / { inside = 0 }
+              inside && /^\*\*Jobs:\*\*/ { found = 1; exit }
+              END { exit found ? 0 : 1 }
+            ' "$README" || {
+              echo "::error file=$README::section for $name has no **Jobs:** list"
               errors=1
             }
           done
