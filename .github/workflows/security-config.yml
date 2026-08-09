@@ -82,6 +82,7 @@ jobs:
     steps:
       - name: Resolve repository visibility
         id: repo
+        if: inputs.enable-sarif
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
@@ -156,6 +157,7 @@ jobs:
     steps:
       - name: Resolve repository visibility
         id: repo
+        if: inputs.enable-sarif
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
