@@ -1,0 +1,28 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "description": "Alpine apk pin management for Dockerfiles via repology. Covers both '>=' lower-bound and '=' exact pins. The Alpine release below is hard-coded and nothing bumps it: when consumers move to a newer Alpine base image, 'alpine_3_24' has to be raised here in both the depNameTemplate and the matchPackageNames rule, or repology keeps resolving against the old branch.",
+  "customManagers": [
+    {
+      "customType": "regex",
+      "description": "Bump every apk pin inside an 'apk add' block (>= lower-bound or = exact), including the -rN release suffix. The two-stage recursive match keeps the pattern from leaking into unrelated line continuations such as ENV blocks.",
+      "managerFilePatterns": ["/(^|/)Dockerfile$/"],
+      "matchStringsStrategy": "recursive",
+      "matchStrings": [
+        "apk add(?:[^\\n]*\\\\\\n)*[^\\n]*",
+        "\"?(?<depName>[a-z0-9][a-z0-9._+-]*)(?:>=|=)(?<currentValue>\\d[a-zA-Z0-9._]*-r\\d+)\"?"
+      ],
+      "depNameTemplate": "alpine_3_24/{{{depName}}}",
+      "datasourceTemplate": "repology",
+      "versioningTemplate": "loose"
+    }
+  ],
+  "packageRules": [
+    {
+      "description": "Alpine packages (repology)",
+      "matchManagers": ["custom.regex"],
+      "matchDatasources": ["repology"],
+      "matchPackageNames": ["/^alpine_3_24\\//"],
+      "groupName": "Alpine packages"
+    }
+  ]
+}

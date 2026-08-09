@@ -10,6 +10,24 @@ This is a rolling release - changes are deployed continuously to `main`.
 
 ### Added
 
+- **renovate-alpine.json** is a new shared preset for Alpine apk pins in
+  Dockerfiles, with a copy-paste consumer example in
+  `templates/renovate-alpine.example.json`. `docker.ansible` and
+  `action.playbook` each carry their own copy of this regex manager today, so
+  every Alpine bump and every change to the match behaviour has to be applied
+  twice. A two-stage recursive match first cuts the `apk add` block and then
+  extracts the pins from it, which covers both the `>=` lower-bound and the `=`
+  exact style in one manager; the single-stage regex in use today anchors on the
+  line continuation instead and only avoids matching `ENV` values because every
+  environment variable in both repos happens to be upper-case. The preset stays
+  out of `renovate-base.json` because the go and ansible presets extend the
+  base and would inherit repology lookups they have no pins for. It carries the
+  `Alpine packages` grouping rule, so a consumer adopting it gets one grouped PR
+  instead of one per pin — a behaviour change for `docker.ansible` and its 30
+  pins. The Alpine release stays hard-coded at `alpine_3_24` and nothing bumps
+  it; moving to a newer base image means raising it in the preset. Consumers are
+  migrated separately, so the preset is unused until then and the manager never
+  runs twice.
 - **pull-request.yml** gains a `workflow-input-injection` job backed by
   `scripts/tests/test-workflow-input-injection.sh`. A `${{ inputs.* }}`
   reference inside a `run:` body is substituted before the shell parses the
