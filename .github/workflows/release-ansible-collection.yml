@@ -39,12 +39,24 @@ jobs:
 
       - name: Get version from tag
         id: get_version
-        run: echo "VERSION=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
+        run: echo "VERSION=${GITHUB_REF#refs/tags/}" >> "$GITHUB_OUTPUT"
 
       - name: Extract changelog for version
         id: changelog
+        env:
+          VERSION: ${{ steps.get_version.outputs.VERSION }}
         run: |
-          VERSION="${{ steps.get_version.outputs.VERSION }}"
+          # The tag value reaches the shell via env:, never via workflow
+          # expression interpolation into the script body. It is additionally
+          # restricted to a version shape below, because env: alone does not
+          # neutralise regex metacharacters inside the sed address expressions.
+          case "$VERSION" in
+            *[!A-Za-z0-9.+_-]*|'')
+              echo "Unexpected version format: refusing to build a pattern from it" >&2
+              echo "found=false" >> "$GITHUB_OUTPUT"
+              exit 0
+              ;;
+          esac
           # Extract the section for this version from CHANGELOG.md
           if [ -f "CHANGELOG.md" ]; then
             # Get content between this version and the next version heading
@@ -55,9 +67,9 @@ jobs:
             fi
             # Save to file for multiline support
             echo "$CONTENT" > /tmp/changelog.txt
-            echo "found=true" >> $GITHUB_OUTPUT
+            echo "found=true" >> "$GITHUB_OUTPUT"
           else
-            echo "found=false" >> $GITHUB_OUTPUT
+            echo "found=false" >> "$GITHUB_OUTPUT"
           fi
 
       - name: Resolve Python version
