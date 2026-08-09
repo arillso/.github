@@ -85,6 +85,7 @@ This repository provides shared Renovate presets for consumer repositories:
 | `renovate-go` | Go module management | `github>arillso/.github:renovate-go#<date-tag>` |
 | `renovate-actions` | GitHub Actions dependencies | `github>arillso/.github:renovate-actions#<date-tag>` |
 | `renovate-ansible` | Ansible Galaxy dependencies | `github>arillso/.github:renovate-ansible#<date-tag>` |
+| `renovate-alpine` | Alpine apk pins in Dockerfiles | `github>arillso/.github:renovate-alpine#<date-tag>` |
 
 Always append the `#<date-tag>` pin (a `YYYY-MM-DD` tag of this repository, see
 [templates/renovate.json](./templates/renovate.json) for a ready-to-copy
