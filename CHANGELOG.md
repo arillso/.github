@@ -54,6 +54,23 @@ This is a rolling release - changes are deployed continuously to `main`.
   bodies are unchanged; the `readme-sync` job already discriminated on
   `workflow_call` rather than on the file name.
 
+### Fixed
+
+- **security-secrets.yml** excludes the `lob` detector from TruffleHog, which
+  reported ordinary source code as verified credentials and failed the scan for
+  consumers with nothing to find. The detector matches
+  `(live|test)_[a-zA-Z0-9_]{35}` with no entropy requirement, so any
+  40-character identifier beginning with `test_` qualifies — a length
+  descriptive pytest function names reach routinely. Verification then POSTs an
+  empty body and counts the 422 that comes back as proof the credential is
+  live, which is why `--only-verified` did not filter these out. A consumer hit
+  this with two test function names of exactly 40 characters, producing exactly
+  two verified findings and a red scan on its default branch. Gitleaks and
+  pattern detection are untouched, so a real credential is still caught by two
+  of the three scanners. Upstream tracks the defect as
+  trufflesecurity/trufflehog#5184; the exclusion carries a comment pointing
+  there and should be dropped once a release includes the fix.
+
 ---
 
 ## 2026-08-08
