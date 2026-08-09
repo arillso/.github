@@ -132,6 +132,47 @@ jobs:
           fi
           echo "GUARD-PASS"
 
+      - name: Assert a crashed scanner survives the tee pipe
+        run: |
+          set -euo pipefail
+          # `security-deps.yml` (govulncheck) and `security-config.yml`
+          # (kubesec) both pipe a scanner through `tee` to keep the report as
+          # an artifact. Without `pipefail` the pipe reports the exit code of
+          # `tee`, so a scanner that never ran leaves a green job behind.
+          REPORT="$RUNNER_TEMP/scanner.json"
+          rc=0
+          (
+            set -euo pipefail
+            sh -c 'echo "{\"config\":{}}"; exit 2' | tee "$REPORT"
+          ) || rc=$?
+          if [ "$rc" -ne 2 ]; then
+            echo "::error::scanner exit code masked by the pipe (got $rc, want 2)"
+            exit 1
+          fi
+          # The crashed scanner still wrote a header frame, which is why a
+          # file-size check cannot stand in for a real result check.
+          if [ ! -s "$REPORT" ]; then
+            echo "::error::expected the crashed scanner to still write output"
+            exit 1
+          fi
+          echo "GUARD-PASS"
+
+      - name: Assert a broken report fails the jq check
+        run: |
+          set -euo pipefail
+          # The kubesec step used to read `jq ... 2>/dev/null || echo "0"`,
+          # turning an unparsable report into "no critical findings". The
+          # count must come from real JSON or the step must fail.
+          REPORT="$RUNNER_TEMP/broken.json"
+          printf 'not json\n' > "$REPORT"
+          rc=0
+          jq '[.[] | select(.scoring.critical > 0)] | length' "$REPORT" >/dev/null 2>&1 || rc=$?
+          if [ "$rc" -eq 0 ]; then
+            echo "::error::jq accepted a broken report instead of failing"
+            exit 1
+          fi
+          echo "GUARD-PASS"
+
   # A `${{ inputs.* }}` reference in a `run:` body is substituted before the
   # shell parses the line, so a caller-supplied value would be shell source on
   # the runner rather than an argument. The guard asserts structurally that no

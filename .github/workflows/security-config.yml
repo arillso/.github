@@ -284,6 +284,7 @@ jobs:
           # renovate: datasource=docker depName=kubesec/kubesec
           KUBESEC_IMAGE_VERSION: 'v2.14.2'
         run: |
+          set -euo pipefail
           # Match the same scope the gating step established (find-manifests above):
           # only files under */templates/*. This avoids feeding kubesec non-manifest
           # YAML like Chart.yaml, values.yaml, kustomization.yaml or CI configs.
@@ -299,8 +300,12 @@ jobs:
             "kubesec/kubesec:${KUBESEC_IMAGE_VERSION}" scan "${manifests[@]}" \
             | tee kubesec-results.json
 
-          # Check for critical issues
-          CRITICAL=$(jq '[.[] | select(.scoring.critical > 0)] | length' kubesec-results.json 2>/dev/null || echo "0")
+          # Check for critical issues. No `|| echo 0` fallback here: kubesec
+          # writing something that is not JSON means the scan broke, and
+          # reporting that as "no critical findings" is the failure mode this
+          # step exists to catch. Findings themselves stay a warning — the
+          # scoring is heuristic and should not block consumers.
+          CRITICAL=$(jq '[.[] | select(.scoring.critical > 0)] | length' kubesec-results.json)
 
           if [ "$CRITICAL" -gt 0 ]; then
             echo "::warning::Found $CRITICAL Kubernetes manifests with critical security issues"

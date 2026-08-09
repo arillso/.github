@@ -70,15 +70,24 @@ jobs:
       - name: Run govulncheck
         working-directory: ${{ inputs.working-directory }}
         run: |
+          set -euo pipefail
           go install golang.org/x/vuln/cmd/govulncheck@latest
           govulncheck -json ./... | tee govulncheck.json
 
-          if [ -s govulncheck.json ]; then
-            echo "::warning::Vulnerabilities detected by govulncheck"
-            jq -r '.message // empty' govulncheck.json | head -10
-          else
-            echo "::notice::No vulnerabilities found"
+          # Two reasons the previous file-size check could not work. `-json`
+          # always writes config and SBOM frames, so the report is never empty
+          # and the `no vulnerabilities` branch was unreachable. And in JSON
+          # mode the exit code reports only whether the scan ran, not whether
+          # it found anything — `pipefail` alone catches a crashed scanner but
+          # never a finding. So count `finding` frames, deduplicated by OSV id:
+          # they are emitted once per trace depth (module, package, symbol).
+          OSVS=$(jq -s -r '[.[] | select(.finding != null) | .finding.osv] | unique[]' govulncheck.json)
+          if [ -n "$OSVS" ]; then
+            echo "::error::govulncheck reported $(echo "$OSVS" | wc -l) vulnerability(ies)"
+            echo "$OSVS"
+            exit 1
           fi
+          echo "::notice::No vulnerabilities found"
 
       - name: Check Go licenses
         if: inputs.enable-license-check
