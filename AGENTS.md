@@ -312,6 +312,7 @@ specific release.
 ├── CHANGELOG.md                 # Version history
 ├── LICENSE                      # MIT License
 ├── .editorconfig                # Editor consistency
+├── .yamllint.yml                # This repo's own yamllint config
 ├── .gitignore                   # Git ignore patterns
 ├── CODEOWNERS                   # Repository owners
 ├── CODE_OF_CONDUCT.md           # Contributor Covenant
