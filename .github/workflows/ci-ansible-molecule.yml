@@ -288,7 +288,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
-          name: molecule-log-${{ inputs.driver }}-${{ matrix.scenario }}
+          name: molecule-log-${{ inputs.concurrency-suffix != '' && format('{0}-', inputs.concurrency-suffix) || '' }}${{ inputs.driver }}-${{ matrix.scenario }}
           path: ${{ env.MOLECULE_LOG }}
           retention-days: 7
           if-no-files-found: ignore

@@ -125,11 +125,14 @@ the API does serve:
 - The job summary carries the last 200 lines in a collapsed block — enough for
   the usual case, where the failed task and its `fatal:` block sit at the end.
 - The full log is uploaded as an artifact named
-  `molecule-log-<driver>-<scenario>`, kept for 7 days. Use it when the failure
-  is further up (a converge that dies mid-run, a timeout):
+  `molecule-log-[<concurrency-suffix>-]<driver>-<scenario>`, kept for 7 days.
+  The suffix part only appears for callers that set `concurrency-suffix`; it
+  keeps the artifacts apart when several jobs call this workflow with the same
+  driver and scenario. Use the artifact when the failure is further up (a
+  converge that dies mid-run, a timeout):
 
   ```bash
-  gh run download <run-id> --name molecule-log-qemu-default
+  gh run download <run-id> --name molecule-log-molecule-k3s-qemu-default
   ```
 
 ---
