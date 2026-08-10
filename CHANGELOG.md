@@ -6,6 +6,22 @@ This is a rolling release - changes are deployed continuously to `main`.
 
 ---
 
+## 2026-08-10
+
+### Changed
+
+- **ci-ansible-molecule.yml** prefixes the molecule log artifact with
+  `concurrency-suffix` when the caller sets it, so the name becomes
+  `molecule-log-[<concurrency-suffix>-]<driver>-<scenario>`. Callers that run
+  several molecule jobs against the same driver and scenario previously
+  collapsed every log into one artifact name: `arillso/ansible.container` runs
+  seven roles that all use the `default` scenario, so all seven uploads
+  competed for `molecule-log-qemu-default` and the surviving log could not be
+  traced back to a role. The suffix is reused rather than introduced — those
+  callers already set it for the concurrency group, and each of the seven
+  values is distinct — so no consumer has to pass anything new. Callers that
+  leave the input empty keep the exact name they have today.
+
 ## 2026-08-09
 
 ### Added
