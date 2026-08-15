@@ -214,3 +214,19 @@ jobs:
         run: python3 -m pip install --disable-pip-version-check pyyaml
       - name: Assert caller inputs reach shell bodies through env
         run: scripts/tests/test-workflow-input-injection.sh
+
+  # The `.rst` customManager in renovate-base.json rewrites SHA-pinned actions
+  # inside documentation examples, where placeholder SHAs and deliberate
+  # counter-examples sit in the same file and must stay untouched. No
+  # `renovate-config-validator` runs here, so a loosened regex would otherwise
+  # first surface as a Renovate pull request rewriting a "wrong" example into a
+  # right one. Only `jq` and `grep -P` are needed, both present on the runner.
+  renovate-rst-manager:
+    name: Renovate .rst Manager Guard
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - name: Assert the .rst manager spares placeholder and mutable refs
+        run: scripts/tests/test-renovate-rst-manager.sh
