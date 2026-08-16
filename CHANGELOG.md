@@ -10,6 +10,35 @@ This is a rolling release - changes are deployed continuously to `main`.
 
 ### Fixed
 
+- **security-code.yml** derives the Go toolchain from `go.mod` instead of a
+  hardcoded default. The `go-version` input defaulted to `1.25`, which silently
+  applied to every consumer that omitted it, and the only way to avoid it was to
+  repeat the version as a literal — `arillso/go.ansible` carried exactly that,
+  with a comment asking the next reader to keep it in sync with `go.mod` by hand.
+  That sync point is what let the Go 1.26.5 stdlib advisories (GO-2026-5026,
+  -5942, -5972, -6088, -6089, -6090, -6091, -6218) sit unnoticed in the CodeQL
+  job. `go-version` now defaults to empty and a new `go-version-file` input
+  (default `go.mod`) takes over, mirroring how `security-deps.yml` has always
+  resolved its toolchain. Consumers that pass an explicit `go-version` keep it;
+  the input still wins when set. When neither applies — no `go-version` and no
+  `go-version-file` on disk — the job falls back to `stable` rather than failing
+  in `Setup Go`, so a Go repository whose module does not sit at the workspace
+  root still runs. `security-deps.yml` guards the same way.
+
+- **security-code.yml**, **security-config.yml**, **security-sbom.yml**,
+  **ci-ansible-molecule.yml** and **release-go.yml** give their `concurrency`
+  group a static per-workflow discriminator. Inside a `workflow_call` reusable
+  `github.workflow` and `github.ref` resolve to the *caller*, so a bare
+  `${{ github.workflow }}-${{ github.ref }}` group is byte-identical to the
+  group the calling workflow declares for itself. With `cancel-in-progress`
+  defaulting to `true` the job was dropped at scheduling time — no job record,
+  no annotation, no log, just a run reporting `failure` while every job it did
+  create is green. The nightly security scans of `arillso/go.ansible` and
+  `arillso/action.playbook` lost their CodeQL job this way from 2026-08-12, the
+  day they moved from `security-codeql.yml` to `security-code.yml`.
+  `security-secrets.yml` and `ci-go.yml` already carried this fix; these five
+  did not. Consumers pick it up with the next preset tag.
+
 - **renovate-ansible.json** gives the `Molecule platform images` customManager
   an `autoReplaceStringTemplate`, so the `pinDigests` rule that sits next to it
   can actually pin. Renovate's field-wise rewrite path only rewrites tokens the

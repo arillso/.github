@@ -53,8 +53,13 @@ permissions:
   packages: write
 
 concurrency:
+  # Static `release-go-` discriminator: inside a `workflow_call` reusable
+  # `github.workflow`/`github.ref` resolve to the *caller*, so without it this
+  # group collides with the caller's own top-level group and the job is dropped
+  # before it is ever created. `concurrency-suffix` further separates parallel
+  # invocations of this same reusable.
   group: >-
-    ${{ github.workflow }}-${{ github.ref }}${{
+    release-go-${{ github.workflow }}-${{ github.ref }}${{
       inputs.concurrency-suffix != '' && format('-{0}', inputs.concurrency-suffix) || ''
     }}
   cancel-in-progress: ${{ inputs.cancel-in-progress }}
