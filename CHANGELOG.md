@@ -6,6 +6,40 @@ This is a rolling release - changes are deployed continuously to `main`.
 
 ---
 
+## 2026-08-16
+
+### Fixed
+
+- **renovate-ansible.json** gives the `Molecule platform images` customManager
+  an `autoReplaceStringTemplate`, so the `pinDigests` rule that sits next to it
+  can actually pin. Renovate's field-wise rewrite path only rewrites tokens the
+  matched line already holds: pinning a bare `:latest` leaves `currentValue`
+  unchanged and has no `currentDigest` to swap, so the line came back
+  byte-identical, `confirmIfDepUpdated` found no digest, and the branch was
+  discarded with `Error updating branch: update failure` — all eight molecule
+  pins in `arillso/ansible.agent` failed this way. A template is the only path
+  that can add a token, and it reproduces the whole match (`image: ` prefix and
+  trailing newline included) because `replaceAt` swaps the match as a unit; the
+  `matchStrings` regex is unchanged. The digest slot is guarded by
+  `{{#if newDigest}}` so a plain tag update does not emit a bare `@`. One known
+  ceiling: the template writes the value unquoted with a single space after
+  `image:`, so a quoted value would lose its quotes — still valid YAML, and no
+  molecule scenario in the consuming repositories uses that form. Consumers pick
+  the fix up when the preset tag they extend moves forward.
+
+### Added
+
+- **pull-request.yml** gains a `renovate-molecule-manager` job backed by
+  `scripts/tests/test-renovate-molecule-manager.sh`. The check is a round trip
+  rather than a string comparison: the unpinned `image:` line has to match the
+  manager's regex, the rendered template has to match that same regex again, and
+  the digest has to come back out of it — which is exactly the re-extraction
+  `confirmIfDepUpdated` performs and exactly the step that failed. Regex and
+  template are read out of the JSON with `jq` instead of restated, so the guard
+  cannot drift away from the preset it guards. Without it the manager stays in a
+  JSON no CI parses, and a template lost to a later edit would first surface as
+  a failing Renovate run on a downstream repository.
+
 ## 2026-08-10
 
 ### Changed

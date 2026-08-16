@@ -230,3 +230,21 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
       - name: Assert the .rst manager spares placeholder and mutable refs
         run: scripts/tests/test-renovate-rst-manager.sh
+
+  # The molecule customManager in renovate-ansible.json is paired with a
+  # `pinDigests` rule, and pinning needs `autoReplaceStringTemplate`: Renovate's
+  # field-wise rewrite can only change tokens the line already carries, while a
+  # pin has to add one. Without the template every pinDigest update comes back
+  # byte-identical and the branch is discarded. No `renovate-config-validator`
+  # runs here, so the loss would first surface as a failing Renovate run on a
+  # consumer repository. Only `jq` and `grep -P` are needed, both present on the
+  # runner.
+  renovate-molecule-manager:
+    name: Renovate Molecule Manager Guard
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - name: Assert the molecule manager can pin a digest
+        run: scripts/tests/test-renovate-molecule-manager.sh

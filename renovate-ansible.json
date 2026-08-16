@@ -60,7 +60,8 @@
       "datasourceTemplate": "docker",
       "matchStrings": [
         "image:\\s*[\"']?(?<depName>[^:\\s\"']+):(?<currentValue>[^@\\s\"']+?)(?:@(?<currentDigest>sha256:[a-f0-9]+))?[\"']?\\s*(?:\\r?\\n|\\r|$)"
-      ]
+      ],
+      "autoReplaceStringTemplate": "image: {{{depName}}}:{{{newValue}}}{{#if newDigest}}@{{{newDigest}}}{{/if}}\n"
     },
     {
       "description": "Keep .python-version pinned to a current released Python",
