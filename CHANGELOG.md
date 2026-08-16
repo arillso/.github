@@ -25,6 +25,20 @@ This is a rolling release - changes are deployed continuously to `main`.
   in `Setup Go`, so a Go repository whose module does not sit at the workspace
   root still runs. `security-deps.yml` guards the same way.
 
+- **security-code.yml**, **security-config.yml**, **security-sbom.yml**,
+  **ci-ansible-molecule.yml** and **release-go.yml** give their `concurrency`
+  group a static per-workflow discriminator. Inside a `workflow_call` reusable
+  `github.workflow` and `github.ref` resolve to the *caller*, so a bare
+  `${{ github.workflow }}-${{ github.ref }}` group is byte-identical to the
+  group the calling workflow declares for itself. With `cancel-in-progress`
+  defaulting to `true` the job was dropped at scheduling time — no job record,
+  no annotation, no log, just a run reporting `failure` while every job it did
+  create is green. The nightly security scans of `arillso/go.ansible` and
+  `arillso/action.playbook` lost their CodeQL job this way from 2026-08-12, the
+  day they moved from `security-codeql.yml` to `security-code.yml`.
+  `security-secrets.yml` and `ci-go.yml` already carried this fix; these five
+  did not. Consumers pick it up with the next preset tag.
+
 - **renovate-ansible.json** gives the `Molecule platform images` customManager
   an `autoReplaceStringTemplate`, so the `pinDigests` rule that sits next to it
   can actually pin. Renovate's field-wise rewrite path only rewrites tokens the
