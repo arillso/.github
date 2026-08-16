@@ -33,6 +33,12 @@
         "**/roles/**/molecule/**/molecule.yml"
       ],
       "pinDigests": true
+    },
+    {
+      "description": "ansible-test supports Python 3.13 at most and rejects newer interpreters, so .python-version must not follow the latest released Python. release-ansible-collection.yml falls back to .python-version when the caller passes no python_version, so an unbounded bump would build the release artifact on an interpreter the CI never tested.",
+      "matchDatasources": ["python-version"],
+      "matchDepNames": ["python"],
+      "allowedVersions": "<3.14"
     }
   ],
   "ansible-galaxy": {
