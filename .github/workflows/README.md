@@ -314,7 +314,8 @@ jobs:
 - `languages` (optional): Languages to analyze as a JSON array (default: `["javascript-typescript"]`)
 - `queries` (optional): Query suites to run (default: `security-extended,security-and-quality`)
 - `node-version-file` (optional): Node version file for JS/TS projects (default: `.nvmrc`)
-- `go-version` (optional): Go version for Go projects (default: `1.25`)
+- `go-version` (optional): Go version for Go projects; leave empty to derive it from `go-version-file` (default: empty)
+- `go-version-file` (optional): Go version file for Go projects, ignored when `go-version` is set (default: `go.mod`)
 - `python-version` (optional): Python version for Python projects (default: `3.12`)
 - `package-manager` (optional): Package manager override (npm, pnpm, yarn); auto-detected from lock files if empty
 - `build-command` (optional): Custom build command; autobuild if empty

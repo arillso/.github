@@ -18,8 +18,12 @@ on:
         description: 'Node version file (for JS/TS projects)'
       go-version:
         type: string
-        default: '1.25'
-        description: 'Go version (for Go projects)'
+        default: ''
+        description: 'Go version (for Go projects). Leave empty to derive it from go-version-file.'
+      go-version-file:
+        type: string
+        default: 'go.mod'
+        description: 'Go version file (for Go projects). Ignored when go-version is set.'
       python-version:
         type: string
         default: '3.12'
@@ -157,6 +161,7 @@ jobs:
         uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
           go-version: ${{ inputs.go-version }}
+          go-version-file: ${{ inputs.go-version == '' && inputs.go-version-file || '' }}
           cache: true
 
       - name: Setup Python

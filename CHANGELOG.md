@@ -6,6 +6,24 @@ This is a rolling release - changes are deployed continuously to `main`.
 
 ---
 
+## 2026-08-17
+
+### Fixed
+
+- **security-code.yml** derives the Go toolchain from `go.mod` instead of a
+  hardcoded default. The `go-version` input defaulted to `1.25`, which silently
+  applied to every consumer that omitted it, and the only way to avoid it was to
+  repeat the version as a literal — `arillso/go.ansible` carried exactly that,
+  with a comment asking the next reader to keep it in sync with `go.mod` by hand.
+  That sync point is what let the Go 1.26.5 stdlib advisories (GO-2026-5026,
+  -5942, -5972, -6088, -6089, -6090, -6091, -6218) sit unnoticed in the CodeQL
+  job. `go-version` now defaults to empty and a new `go-version-file` input
+  (default `go.mod`) takes over, mirroring how `security-deps.yml` has always
+  resolved its toolchain. Consumers that pass an explicit `go-version` keep it;
+  the input still wins when set.
+
+---
+
 ## 2026-08-16
 
 ### Fixed
