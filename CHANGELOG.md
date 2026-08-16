@@ -6,7 +6,7 @@ This is a rolling release - changes are deployed continuously to `main`.
 
 ---
 
-## 2026-08-17
+## 2026-08-16
 
 ### Fixed
 
@@ -20,13 +20,10 @@ This is a rolling release - changes are deployed continuously to `main`.
   job. `go-version` now defaults to empty and a new `go-version-file` input
   (default `go.mod`) takes over, mirroring how `security-deps.yml` has always
   resolved its toolchain. Consumers that pass an explicit `go-version` keep it;
-  the input still wins when set.
-
----
-
-## 2026-08-16
-
-### Fixed
+  the input still wins when set. When neither applies — no `go-version` and no
+  `go-version-file` on disk — the job falls back to `stable` rather than failing
+  in `Setup Go`, so a Go repository whose module does not sit at the workspace
+  root still runs. `security-deps.yml` guards the same way.
 
 - **renovate-ansible.json** gives the `Molecule platform images` customManager
   an `autoReplaceStringTemplate`, so the `pinDigests` rule that sits next to it

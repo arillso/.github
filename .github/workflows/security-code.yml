@@ -75,6 +75,10 @@ concurrency:
     }}
   cancel-in-progress: ${{ inputs.cancel-in-progress }}
 
+env:
+  # Only used when go-version is empty and go-version-file does not exist.
+  GO_FALLBACK_VERSION: 'stable'
+
 jobs:
   analyze:
     name: Analyze Code (${{ matrix.language }})
@@ -156,12 +160,28 @@ jobs:
           node-version-file: ${{ inputs.node-version-file }}
           cache: ${{ steps.detect-pm.outputs.manager }}
 
+      - name: Detect Go version file
+        id: detect-go
+        if: matrix.language == 'go' && inputs.go-version == ''
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ -f "${GO_VERSION_FILE}" ]; then
+            echo "present=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "present=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::${GO_VERSION_FILE} not found, falling back to Go ${FALLBACK}"
+          fi
+        env:
+          GO_VERSION_FILE: ${{ inputs.go-version-file }}
+          FALLBACK: ${{ env.GO_FALLBACK_VERSION }}
+
       - name: Setup Go
         if: matrix.language == 'go'
         uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
-          go-version: ${{ inputs.go-version }}
-          go-version-file: ${{ inputs.go-version == '' && inputs.go-version-file || '' }}
+          go-version: ${{ inputs.go-version != '' && inputs.go-version || (steps.detect-go.outputs.present == 'true' && '' || env.GO_FALLBACK_VERSION) }}
+          go-version-file: ${{ inputs.go-version == '' && steps.detect-go.outputs.present == 'true' && inputs.go-version-file || '' }}
           cache: true
 
       - name: Setup Python
