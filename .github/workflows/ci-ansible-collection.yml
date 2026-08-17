@@ -181,18 +181,35 @@ jobs:
             exit 1
           fi
 
-          if [[ "$ANSIBLE_VER" == "devel" ]]; then
-            echo "version=3.12" >> "$GITHUB_OUTPUT"
-          elif [[ "$ANSIBLE_VER" =~ ^stable-([0-9]+)\.([0-9]+)$ ]]; then
-            MINOR="${BASH_REMATCH[2]}"
-            if [[ "$MINOR" -ge 20 ]]; then
-              echo "version=3.12" >> "$GITHUB_OUTPUT"
-            else
-              echo "version=$PYTHON_VERSION" >> "$GITHUB_OUTPUT"
-            fi
-          else
-            echo "version=$PYTHON_VERSION" >> "$GITHUB_OUTPUT"
-          fi
+          # The controller Python is a property of the ansible-core *branch*,
+          # not of the caller: `ansible-test sanity --python X` rejects any X
+          # outside that branch's CONTROLLER_PYTHON_VERSIONS. So the sanity job
+          # derives it here and ignores inputs.python_version for known
+          # branches; the input still drives the seven lint/build jobs.
+          #
+          # Each value is the *maximum* of the branch's tuple, so sanity runs on
+          # the newest interpreter the branch accepts — the one closest to what
+          # release-ansible-collection.yml builds the artifact on (.python-version).
+          # Tuples read from ansible/ansible:<branch>
+          # test/lib/ansible_test/_util/target/common/constants.py, 2026-08-17:
+          #   stable-2.18  3.11 3.12 3.13
+          #   stable-2.19  3.11 3.12 3.13
+          #   stable-2.20  3.12 3.13 3.14
+          #   devel        3.13 3.14 3.15
+          # devel is capped at 3.14 rather than its maximum 3.15: 3.15 is
+          # unreleased and setup-python has no build for it.
+          #
+          # An unknown branch keeps the caller's value — validated above. The
+          # table is asserted by scripts/tests/test-controller-python-matrix.sh,
+          # because this job never runs in this repository: a wrong value here
+          # turns every consumer collection red at once instead of failing here.
+          case "$ANSIBLE_VER" in
+            stable-2.18) echo "version=3.13" >> "$GITHUB_OUTPUT" ;;
+            stable-2.19) echo "version=3.13" >> "$GITHUB_OUTPUT" ;;
+            stable-2.20) echo "version=3.14" >> "$GITHUB_OUTPUT" ;;
+            devel) echo "version=3.14" >> "$GITHUB_OUTPUT" ;;
+            *) echo "version=$PYTHON_VERSION" >> "$GITHUB_OUTPUT" ;;
+          esac
 
       - name: Set up Python
         uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7

@@ -289,7 +289,8 @@ the consuming collection. Avoid floating (`*`) bounds.
 All collections target the same Python and pin it in a repo-root `.python-version`
 file. The shared [renovate-ansible](./renovate-ansible.json) preset keeps that
 file on a current released Python (custom manager, `python-version` datasource),
-bounded to `<3.14` because `ansible-test` rejects newer interpreters.
+bounded to `<3.15` because `ansible-test` rejects interpreters newer than the
+ones its branch supports — 3.14 is the maximum on `stable-2.20` and `devel`.
 A collection without `.python-version` is drift — add one. `requires_ansible` is
 `>=2.18.0` across the collections.
 

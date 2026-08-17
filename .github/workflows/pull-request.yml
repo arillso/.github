@@ -248,3 +248,19 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
       - name: Assert the molecule manager can pin a digest
         run: scripts/tests/test-renovate-molecule-manager.sh
+
+  # The sanity job in ci-ansible-collection.yml derives its controller Python
+  # from the ansible-core branch, because `ansible-test` rejects an interpreter
+  # outside that branch's CONTROLLER_PYTHON_VERSIONS. That job never runs here,
+  # only in consumer collections — so a wrong table entry fails silently in this
+  # repository and turns every collection's sanity job red at once, after the
+  # merge. Only `awk` and `bash` are needed, both present on the runner.
+  controller-python-matrix:
+    name: Controller Python Matrix Guard
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - name: Assert the controller Python matches ansible-test support
+        run: scripts/tests/test-controller-python-matrix.sh
