@@ -35,10 +35,10 @@
       "pinDigests": true
     },
     {
-      "description": "ansible-test supports Python 3.13 at most and rejects newer interpreters, so .python-version must not follow the latest released Python. release-ansible-collection.yml falls back to .python-version when the caller passes no python_version, so an unbounded bump would build the release artifact on an interpreter the CI never tested.",
+      "description": "ansible-test supports Python 3.14 at most (stable-2.20 and devel) and rejects newer interpreters, so .python-version must not follow the latest released Python. release-ansible-collection.yml falls back to .python-version when the caller passes no python_version, so an unbounded bump would build the release artifact on an interpreter the CI never tested. Raise this bound only once the sanity matrix in ci-ansible-collection.yml runs a branch that accepts the newer interpreter.",
       "matchDatasources": ["python-version"],
       "matchDepNames": ["python"],
-      "allowedVersions": "<3.14"
+      "allowedVersions": "<3.15"
     }
   ],
   "ansible-galaxy": {
