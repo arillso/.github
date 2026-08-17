@@ -57,7 +57,7 @@ jobs:
 
 - `collection_namespace` (optional): Collection namespace (default: `arillso`)
 - `collection_name` (required): Collection name
-- `python_version` (optional): Python version (default: `3.11`)
+- `python_version` (optional): Python version (default: `3.11`). The sanity-test job ignores this and derives its controller Python from each matrix branch, because `ansible-test` only accepts the interpreters that branch supports; the other jobs use the input as given.
 - `ansible_versions` (optional): JSON array of Ansible versions (default: `["stable-2.16", "stable-2.17", "devel"]`)
 - `enable_integration_tests` (optional): Enable integration tests (default: `false`)
 - `enable_unit_tests` (optional): Enable unit tests (default: `false`)

@@ -8,6 +8,32 @@ This is a rolling release - changes are deployed continuously to `main`.
 
 ## 2026-08-17
 
+### Changed
+
+- **ci-ansible-collection.yml** derives the sanity job's controller Python from
+  the ansible-core branch instead of the caller. `ansible-test sanity --python X`
+  rejects any X outside the branch's `CONTROLLER_PYTHON_VERSIONS`, so the version
+  is a property of the branch, not of the consumer. The job previously pinned
+  `3.12` for `devel` and `stable->=2.20` and passed `python_version` through for
+  everything else, which capped every collection's sanity run at 3.13 even though
+  `stable-2.20` and `devel` accept 3.14. A table now maps each branch to the
+  newest interpreter it supports — `stable-2.18` and `stable-2.19` to `3.13`,
+  `stable-2.20` and `devel` to `3.14` — so sanity runs closest to the interpreter
+  `release-ansible-collection.yml` builds the artifact on. `devel` stops at 3.14
+  rather than its maximum 3.15, which is unreleased and has no `setup-python`
+  build. An unknown branch still honours the caller's `python_version`, and the
+  other seven jobs keep using that input unchanged. The matrix default is
+  untouched. `scripts/tests/test-controller-python-matrix.sh` asserts the table
+  against dated `CONTROLLER_PYTHON_VERSIONS` tuples and runs as its own job in
+  `pull-request.yml`: the sanity job executes only in consumer collections, so a
+  wrong entry would otherwise surface as every collection turning red at once
+  after the merge. `renovate-ansible.json` follows with `allowedVersions` at
+  `<3.15`; its description claimed 3.13 as the ansible-test maximum, which the
+  bound would have kept enforcing. Expect the first run after the merge to widen
+  coverage: `stable-2.18` and `stable-2.19` rise from an effective 3.11 to 3.13,
+  which can surface interpreter-specific sanity findings in collections that are
+  green today.
+
 ### Fixed
 
 - **security-config.yml** and **cleanup-container-registry.yml** quote three
