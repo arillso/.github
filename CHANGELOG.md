@@ -42,6 +42,13 @@ This is a rolling release - changes are deployed continuously to `main`.
   registry cleanup. None can misbehave with the values these actually carry —
   they were the last actionlint findings in the repository, so the linter is now
   clean and a real finding stands out.
+- **workflows/README.md** documents the `ansible_versions` default of
+  `ci-ansible-collection.yml` as `["stable-2.18", "stable-2.19", "stable-2.20"]`,
+  matching the workflow. The section still named the pre-2026-03-08 value
+  `["stable-2.16", "stable-2.17", "devel"]` — that entry raised the workflow
+  default but left the consumer documentation behind, so anyone copying the
+  documented array tested against two EOL ansible-core branches and added
+  `devel`, which the reusable no longer selects by default.
 
 ---
 
