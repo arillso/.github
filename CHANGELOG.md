@@ -6,6 +6,19 @@ This is a rolling release - changes are deployed continuously to `main`.
 
 ---
 
+## 2026-08-17
+
+### Fixed
+
+- **security-config.yml** and **cleanup-container-registry.yml** quote three
+  shell expansions that tripped `SC2086`: `$GITHUB_OUTPUT` twice in the
+  Kubernetes manifest search, and `${DAYS}` in the BSD `date` fallback of the
+  registry cleanup. None can misbehave with the values these actually carry —
+  they were the last actionlint findings in the repository, so the linter is now
+  clean and a real finding stands out.
+
+---
+
 ## 2026-08-16
 
 ### Fixed
