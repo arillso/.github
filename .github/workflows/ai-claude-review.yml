@@ -99,25 +99,39 @@ jobs:
         run: |
           set -euo pipefail
 
+          # A failing `gh api` call must not kill the job: degrade to a first-time
+          # review instead of losing the review entirely. The empty string is the
+          # already-defined "not found" case the fallbacks below handle.
+          DEGRADED=0
+
           BOT=$(gh api "repos/$REPO/pulls/$PR/reviews" \
-            --jq '[.[] | select(.user.type=="Bot" and (.user.login|test("claude";"i")))][0].user.login // ""')
+            --jq '[.[] | select(.user.type=="Bot" and (.user.login|test("claude";"i")))][0].user.login // ""') \
+            || { DEGRADED=1; BOT=""; }
           if [ -z "$BOT" ]; then
             BOT=$(gh api "repos/$REPO/pulls/$PR/comments" \
-              --jq '[.[] | select(.user.type=="Bot" and (.user.login|test("claude";"i")))][0].user.login // ""')
+              --jq '[.[] | select(.user.type=="Bot" and (.user.login|test("claude";"i")))][0].user.login // ""') \
+              || { DEGRADED=1; BOT=""; }
           fi
-          [ -z "$BOT" ] && BOT="claude[bot]"
+          [ -n "$BOT" ] || BOT="claude[bot]"
           echo "bot-login=$BOT" >> "$GITHUB_OUTPUT"
 
           LAST=$(gh api "repos/$REPO/pulls/$PR/reviews" \
-            --jq "[.[] | select(.user.login==\"$BOT\")] | last")
+            --jq "[.[] | select(.user.login==\"$BOT\")] | last") \
+            || { DEGRADED=1; LAST=""; }
 
           if [ "$LAST" = "null" ] || [ -z "$LAST" ]; then
-            echo "mode=first" >> "$GITHUB_OUTPUT"
+            MODE=first
+            echo "mode=$MODE" >> "$GITHUB_OUTPUT"
             echo "last-review-sha=" >> "$GITHUB_OUTPUT"
           else
             SHA=$(printf '%s' "$LAST" | jq -r '.commit_id')
-            echo "mode=followup" >> "$GITHUB_OUTPUT"
+            MODE=followup
+            echo "mode=$MODE" >> "$GITHUB_OUTPUT"
             echo "last-review-sha=$SHA" >> "$GITHUB_OUTPUT"
+          fi
+
+          if [ "$DEGRADED" = "1" ]; then
+            echo "::warning::GitHub API call failed; review-mode detection degraded (mode=$MODE)."
           fi
 
       - uses: anthropics/claude-code-action@9d7150bc8a3dae8149739a88019d192b579ad90c # v1
