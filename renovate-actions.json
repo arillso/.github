@@ -1,7 +1,7 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
   "description": "GitHub Actions Renovate configuration",
-  "extends": ["github>arillso/.github:renovate-base#2026-08-17"],
+  "extends": ["github>arillso/.github:renovate-base#2026-08-18"],
   "packageRules": [
     {
       "description": "Group Docker images",
