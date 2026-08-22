@@ -6,6 +6,44 @@ This is a rolling release - changes are deployed continuously to `main`.
 
 ---
 
+## 2026-08-22
+
+### Changed
+
+- **renovate-base.json** enables `lockFileMaintenance` (weekly, Monday before
+  6am, automerged), aligned with sbaerlocher/.github. Consumer repos with
+  lockfiles (e.g. `go.sum` via gomod, `package-lock.json`) now get a scheduled
+  lockfile refresh PR that merges on green CI; repos without lockfiles are
+  unaffected.
+- **renovate-go.json** aligned with the current sbaerlocher/.github go preset:
+  - Go toolchain rule split — grouping, 14-day release age and priority apply
+    to every update type, while a separate rule blocks automerge only for
+    major/minor. Go patch releases (1.25.11 -> 1.25.12) now automerge via the
+    base non-major rule; previously every toolchain update required manual
+    review.
+  - `golang.org/x` and `go.uber.org` merged into one "Go ecosystem packages"
+    group; `k8s.io`/`sigs.k8s.io` folded into "Go platform packages" (keeping
+    `separateMultipleMajor: false` for the co-versioned k8s majors).
+  - Testing, linting and dev-tool groups merged into one "Go dev tooling"
+    group. Per-rule `automerge: true` and `semanticCommitType: chore`
+    overrides dropped — the base preset already automerges non-majors and
+    sets the chore type.
+  - Blanket "major updates - manual review" and "indirect dependencies" rules
+    dropped; the base major rule covers the former, and gomod indirect deps
+    are not updated by default.
+  - Unused custom managers removed (`.go-version`, Makefile `GO_VERSION` /
+    `GOLANGCI_LINT_VERSION`, `# renovate: go-tool` comments) — no arillso
+    repository matches any of them. Replaced by the Dockerfile
+    `RUN go install <module>@<version>` manager used in the sbaerlocher org,
+    keeping the two presets diffable.
+- **.github/renovate.json** adopts the self-reference rule from
+  sbaerlocher/.github: the repo's own `arillso/.github` date-tag pins (here
+  and in `templates/`) skip the preset's 1-day `minimumReleaseAge` and update
+  in their own branch at any time, so the pins no longer trail the current
+  tag by a day or more. Consumers keep the 1-day soak. The redundant
+  `github-actions` grouping rule is dropped — the base preset already groups
+  actions.
+
 ## 2026-08-17
 
 ### Changed
@@ -74,7 +112,7 @@ This is a rolling release - changes are deployed continuously to `main`.
 - **security-code.yml**, **security-config.yml**, **security-sbom.yml**,
   **ci-ansible-molecule.yml** and **release-go.yml** give their `concurrency`
   group a static per-workflow discriminator. Inside a `workflow_call` reusable
-  `github.workflow` and `github.ref` resolve to the *caller*, so a bare
+  `github.workflow` and `github.ref` resolve to the _caller_, so a bare
   `${{ github.workflow }}-${{ github.ref }}` group is byte-identical to the
   group the calling workflow declares for itself. With `cancel-in-progress`
   defaulting to `true` the job was dropped at scheduling time — no job record,

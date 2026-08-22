@@ -382,6 +382,8 @@ Configured in `renovate-base.json`:
   versions current without a manual audit.
 - Vulnerability alerts run on their own schedule (`at any time`) instead of
   waiting for the regular update window.
+- Lockfile maintenance runs weekly (Monday before 6am) and automerges, so
+  transitive updates inside lockfiles do not accumulate between direct bumps.
 - Updates run in a daily window (before 6am, `Europe/Zurich`); open work is
   listed on the Dependency Dashboard issue.
 
