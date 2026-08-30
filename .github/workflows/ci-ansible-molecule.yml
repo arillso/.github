@@ -172,8 +172,11 @@ jobs:
     name: Molecule (${{ matrix.scenario }})
     needs: discover
     runs-on: ${{ inputs.runs_on }}
-    # Scenarios normally finish in 4-12 minutes; without an explicit cap a
-    # hung run blocks the PR for the GitHub default of 360 minutes.
+    # Tuned for the KVM-accelerated ubuntu-latest default, where scenarios
+    # finish in 4-12 minutes. Without an explicit cap a hung run blocks the
+    # PR for the GitHub default of 360 minutes. Callers overriding `runs_on`
+    # with a runner that has no /dev/kvm push molecule-qemu onto TCG and may
+    # need a larger value.
     timeout-minutes: 30
     strategy:
       fail-fast: false
