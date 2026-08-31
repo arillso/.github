@@ -6,6 +6,18 @@ This is a rolling release - changes are deployed continuously to `main`.
 
 ---
 
+## 2026-08-31
+
+### Changed
+
+- **ci-ansible-molecule.yml** caps both jobs with `timeout-minutes` (`molecule`
+  at 30, `discover` at 10). A hung run previously reached the GitHub default of
+  360 minutes and blocked the consuming repository's pull request for six hours;
+  it now fails inside the cap. The 30 minute value is tuned for the
+  KVM-accelerated `ubuntu-latest` default, where scenarios finish in 4-12
+  minutes — callers overriding `runs_on` with a runner that has no `/dev/kvm`
+  fall back to TCG and may need a larger value.
+
 ## 2026-08-22
 
 ### Changed
