@@ -479,7 +479,7 @@ jobs:
 - `working-directory` (optional): Working directory for scans (default: `.`)
 - `fail-on-severity` (optional): Minimum severity to fail (default: `moderate`)
 - `enable-license-check` (optional): Enable license compliance checking (default: `true`)
-- `allowed-licenses` (optional): Comma-separated list of allowed licenses (default: `Apache-2.0,BSD-2-Clause,BSD-3-Clause,ISC,MIT,0BSD,CC0-1.0`)
+- `allowed-licenses` (optional): Comma-separated list of allowed licenses (default: `Apache-2.0,BSD-2-Clause,BSD-3-Clause,ISC,MIT,0BSD,CC0-1.0,Unlicense`)
 - `denied-licenses` (optional): Comma-separated list of denied licenses (default: `GPL-2.0,GPL-3.0,AGPL-3.0`)
 - `fail-on-license-violation` (optional): Fail workflow on license violations (default: `false`)
 

@@ -6,6 +6,20 @@ This is a rolling release - changes are deployed continuously to `main`.
 
 ---
 
+## 2026-09-05
+
+### Fixed
+
+- **security-deps.yml** adds `Unlicense` to the default `allowed-licenses`.
+  `dependency-review-action` receives an allowlist, so any dependency under a
+  license missing from it fails the check even though the denylist only names
+  the GPL family. `crowdstrike-falconpy` is published under the Unlicense and
+  blocked `arillso/docker.ansible#577`. The Unlicense is an OSI-approved,
+  FSF-libre public-domain dedication, in the same permissive class as the
+  `CC0-1.0` and `0BSD` entries already listed.
+
+---
+
 ## 2026-08-31
 
 ### Changed
