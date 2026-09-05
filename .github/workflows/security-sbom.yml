@@ -85,7 +85,7 @@ jobs:
       # Container Image SBOM
       - name: Generate SBOM for container image
         if: inputs.artifact-type == 'container'
-        uses: anchore/sbom-action@e22c389904149dbc22b58101806040fa8d37a610 # v0.24.0
+        uses: anchore/sbom-action@3ad7283483fc7af8ff2b4ea19663c2d5ca935e26 # v0.24.2
         with:
           image: ${{ inputs.artifact-ref }}
           format: ${{ inputs.sbom-format }}
@@ -94,7 +94,7 @@ jobs:
       # Filesystem SBOM
       - name: Generate SBOM for filesystem
         if: inputs.artifact-type == 'filesystem'
-        uses: anchore/sbom-action@e22c389904149dbc22b58101806040fa8d37a610 # v0.24.0
+        uses: anchore/sbom-action@3ad7283483fc7af8ff2b4ea19663c2d5ca935e26 # v0.24.2
         with:
           path: ${{ inputs.artifact-ref }}
           format: ${{ inputs.sbom-format }}
@@ -179,7 +179,7 @@ jobs:
 
       - name: Attach SBOM to release
         if: inputs.attach-to-release && startsWith(github.ref, 'refs/tags/')
-        uses: softprops/action-gh-release@3d0d9888cb7fd7b750713d6e236d1fcb99157228 # v3
+        uses: softprops/action-gh-release@efb35369e0ad2afab669f228072c1b0d510eae64 # v3
         with:
           tag_name: ${{ github.ref_name }}
           files: ${{ steps.release-asset.outputs.path }}
