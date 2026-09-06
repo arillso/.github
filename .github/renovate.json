@@ -1,6 +1,6 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
-  "extends": ["github>arillso/.github:renovate-base#2026-09-05"],
+  "extends": ["github>arillso/.github:renovate-base#2026-09-06"],
   "packageRules": [
     {
       "description": "Self-reference: this repo pins its own Renovate presets by date tag (e.g. `extends: github>arillso/.github:renovate-base#<DATE-TAG>` here and in templates/). `merge.yml` moves a `YYYY-MM-DD` tag on every push to main, so under the preset's `minimumReleaseAge: 1 day` the newest tag is always too young to pass. Renovate then falls back to the newest tag that does pass, which means the pin trails the current tag by at least a day, and by more whenever a day's tag is cut late in the UTC day or no push happens at all. Waiving the age gate lets the pin track the current tag. `groupName` is required alongside it: the preset groups these deps into the shared non-major branch, and `schedule` is evaluated per branch, so without its own branch the self-reference would inherit that group's `before 6am` window instead of this rule's. Consumers keep the preset's 1-day soak, which is the point there: a fresh tag should sit before it rolls out widely.",
