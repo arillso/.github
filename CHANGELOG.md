@@ -6,6 +6,31 @@ This is a rolling release - changes are deployed continuously to `main`.
 
 ---
 
+## 2026-09-12
+
+### Changed
+
+- **renovate-base.json** batches the `arillso/.github` preset and workflow
+  rollout into a Monday window instead of merging every tag on sight.
+  `merge.yml` cuts a `YYYY-MM-DD` tag on every push to `main`, so the previous
+  daily schedule opened one PR per workflow change in every consumer repo — 16
+  tags in the 30 days to 2026-09-12. The weekly window keeps the rolling-release
+  model while cutting consumer PR churn to roughly four per month.
+
+  The rule now carries an explicit `groupSlug: arillso-github`. Renovate derives
+  the branch from `slugify(groupSlug ?? groupName)` and evaluates `schedule` per
+  branch, and `packageRules` merge last-wins per key — without it the bump
+  inherits `groupSlug: all-non-major` from the non-major rule and lands on
+  `renovate/all-non-major`, where the Monday window either does nothing or
+  defers every other non-major update along with it.
+
+  `minimumReleaseAge` drops from `1 day` to `null`: the Monday window is itself
+  the soak, and a one-day gate would push any tag cut over the weekend past the
+  window and on to the next Monday — an eight-day lag. An urgent workflow fix
+  stays reachable on demand via the Dependency Dashboard checkbox.
+
+---
+
 ## 2026-09-05
 
 ### Fixed
