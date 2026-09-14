@@ -73,6 +73,7 @@ jobs:
   readme-sync:
     name: Workflow README Sync
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     permissions:
       contents: read
     steps:
@@ -124,6 +125,7 @@ jobs:
   pipefail-guard:
     name: Pipefail Guard
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     permissions:
       contents: read
     steps:
@@ -200,6 +202,7 @@ jobs:
   workflow-input-injection:
     name: Workflow Input Injection Guard
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     permissions:
       contents: read
     steps:
@@ -224,6 +227,7 @@ jobs:
   renovate-rst-manager:
     name: Renovate .rst Manager Guard
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     permissions:
       contents: read
     steps:
@@ -242,6 +246,7 @@ jobs:
   renovate-molecule-manager:
     name: Renovate Molecule Manager Guard
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     permissions:
       contents: read
     steps:
@@ -258,9 +263,27 @@ jobs:
   controller-python-matrix:
     name: Controller Python Matrix Guard
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     permissions:
       contents: read
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
       - name: Assert the controller Python matches ansible-test support
         run: scripts/tests/test-controller-python-matrix.sh
+
+  # A job without `timeout-minutes` inherits GitHub's 360 minute default, so a hung
+  # step holds a runner for six hours instead of failing fast. These are reusable
+  # workflows: that cost is not paid once here, it is paid in every consumer
+  # repository that calls them. The guard asserts the property structurally rather
+  # than keeping a copy of the per-job values, which would drift. Only `awk` and
+  # `bash` are needed, both present on the runner.
+  workflow-timeouts:
+    name: Workflow Timeout Guard
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - name: Assert every runner job declares a timeout
+        run: scripts/tests/test-workflow-timeouts.sh

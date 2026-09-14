@@ -62,6 +62,7 @@ jobs:
   test:
     name: Go Test
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     if: ${{ inputs.enable_test }}
     steps:
       - name: Checkout Code
@@ -129,6 +130,7 @@ jobs:
   golangci-lint:
     name: Go Lint
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     if: ${{ inputs.enable_golangci_lint }}
     steps:
       - name: Checkout Code

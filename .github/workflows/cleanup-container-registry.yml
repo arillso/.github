@@ -66,6 +66,7 @@ jobs:
   docker-hub-cleanup:
     name: Docker Hub Cleanup
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     if: ${{ inputs.enable_dockerhub }}
     steps:
       - name: Docker Hub Image Cleanup
@@ -125,6 +126,7 @@ jobs:
   ghcr-cleanup:
     name: GitHub Container Registry Cleanup
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     permissions:
       packages: write
     steps:
@@ -143,6 +145,7 @@ jobs:
     name: Cleanup Summary
     needs: [docker-hub-cleanup, ghcr-cleanup]
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     permissions:
       contents: read
     if: ${{ always() && inputs.enable_summary }}

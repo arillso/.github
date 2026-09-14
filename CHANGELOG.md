@@ -6,6 +6,34 @@ This is a rolling release - changes are deployed continuously to `main`.
 
 ---
 
+## 2026-09-14
+
+### Changed
+
+- **Every reusable workflow caps its jobs with `timeout-minutes`.** `ci-ansible-molecule.yml`
+  was capped on 2026-08-31, but 35 jobs across 14 other workflows still inherited
+  the GitHub default of 360 minutes — a hung step held a runner for six hours and,
+  because these are reusable workflows, held it in the consuming repository rather
+  than here.
+
+  Values follow a 5/10/15 raster derived from measurement, not estimate: across
+  4940 successful job runs in eight `arillso` repositories, no job reached 2
+  minutes at p95. Guards, lints and summaries get 5, tests, scans and builds 10,
+  and the four release/tag jobs that never appeared in the sample get a
+  deliberately conservative 15. The worst case drops from 360 minutes to 15.
+
+  Jobs that call a reusable workflow through `uses:` are untouched — GitHub
+  rejects `timeout-minutes` there, and their bound comes from the called workflow.
+
+### Added
+
+- **`scripts/tests/test-workflow-timeouts.sh`** asserts the property structurally
+  on every pull request: each job owning a runner declares a plausible integer
+  bound, and no `uses:` job declares one. It keeps no copy of the per-job values,
+  so a workflow added later cannot ship unbounded.
+
+---
+
 ## 2026-09-12
 
 ### Changed
