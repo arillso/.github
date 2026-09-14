@@ -37,6 +37,7 @@ jobs:
   actionlint:
     name: Action Lint
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     if: ${{ inputs.enable_actionlint }}
     steps:
       - name: Checkout Code
@@ -51,6 +52,7 @@ jobs:
   shellcheck:
     name: Shell Check
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     if: ${{ inputs.enable_shellcheck }}
     steps:
       - name: Checkout Code
@@ -65,6 +67,7 @@ jobs:
   yamllint:
     name: YAML Lint
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     if: ${{ inputs.enable_yamllint }}
     steps:
       - name: Checkout Code

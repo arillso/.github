@@ -47,6 +47,7 @@ jobs:
   ansible-lint:
     name: Ansible Lint
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - name: Checkout Code
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
@@ -66,6 +67,7 @@ jobs:
   yaml-lint:
     name: YAML Lint
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     steps:
       - name: Checkout Code
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
@@ -84,6 +86,7 @@ jobs:
   python-lint:
     name: Python Lint
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     steps:
       - name: Checkout Code
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
@@ -118,6 +121,7 @@ jobs:
   markdown-lint:
     name: Markdown Lint
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     steps:
       - name: Checkout Code
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
@@ -131,6 +135,7 @@ jobs:
   security-scan:
     name: Security Scan
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     permissions:
       security-events: write
     steps:
@@ -156,6 +161,7 @@ jobs:
   sanity-test:
     name: Sanity Tests
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     strategy:
       matrix:
         ansible-version: ${{ fromJson(inputs.ansible_versions) }}
@@ -233,6 +239,7 @@ jobs:
   unit-test:
     name: Unit Tests
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     if: ${{ inputs.enable_unit_tests }}
     steps:
       - name: Checkout Code
@@ -255,6 +262,7 @@ jobs:
   integration-test:
     name: Integration Tests
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     if: ${{ inputs.enable_integration_tests }}
     steps:
       - name: Checkout Code
@@ -277,6 +285,7 @@ jobs:
   argument-specs:
     name: Argument Specs Check
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     if: ${{ inputs.enable_argument_specs_check }}
     steps:
       - name: Checkout Code
@@ -300,6 +309,7 @@ jobs:
   build:
     name: Build Collection
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     needs: [ansible-lint, yaml-lint, python-lint, sanity-test]
     steps:
       - name: Checkout Code

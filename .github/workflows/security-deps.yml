@@ -136,6 +136,7 @@ jobs:
   security-report:
     name: Create Report
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     needs: [dependency-review, go-audit]
     if: always() && !cancelled()
     steps:
