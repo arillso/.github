@@ -404,6 +404,7 @@ jobs:
   security-report:
     name: Create Report
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     needs: [trivy-config-scan, terraform-security, kubernetes-security, ansible-security]
     if: always() && !cancelled()
     steps:

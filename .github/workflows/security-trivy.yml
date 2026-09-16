@@ -58,6 +58,7 @@ jobs:
   build-image:
     name: Build Docker Image
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     if: ${{ inputs.build_docker_image && inputs.scan_type == 'image' }}
     steps:
       - name: Checkout code
@@ -79,6 +80,7 @@ jobs:
   trivy-scan:
     name: Trivy Vulnerability Scan
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     needs: [build-image]
     if: ${{ always() && !cancelled() }}
     steps:
@@ -118,6 +120,7 @@ jobs:
   secret-scan:
     name: Secret Scan (TruffleHog)
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     if: ${{ inputs.enable_secret_scan }}
     steps:
       - name: Checkout code
