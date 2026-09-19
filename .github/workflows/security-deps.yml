@@ -18,11 +18,11 @@ on:
         description: 'Enable license compliance checking'
       allowed-licenses:
         type: string
-        default: 'Apache-2.0,BSD-2-Clause,BSD-3-Clause,ISC,MIT,0BSD,CC0-1.0,Unlicense'
+        default: 'Apache-2.0,BSD-2-Clause,BSD-3-Clause,ISC,MIT,0BSD,CC0-1.0,Unlicense,GPL-2.0-or-later,GPL-3.0-or-later,LGPL-2.0-or-later,LGPL-2.1-or-later,LGPL-3.0-or-later'
         description: 'Comma-separated list of allowed licenses'
       denied-licenses:
         type: string
-        default: 'GPL-2.0,GPL-3.0,AGPL-3.0'
+        default: 'AGPL-3.0'
         description: 'Comma-separated list of denied licenses'
       fail-on-license-violation:
         type: boolean
