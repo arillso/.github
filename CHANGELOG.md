@@ -6,6 +6,22 @@ This is a rolling release - changes are deployed continuously to `main`.
 
 ---
 
+## 2026-09-19
+
+### Fixed
+
+- **security-deps.yml** `allowed-licenses` default now includes
+  `GPL-2.0-or-later`, `GPL-3.0-or-later`, `LGPL-2.0-or-later`,
+  `LGPL-2.1-or-later`, and `LGPL-3.0-or-later`. The dependency-review job
+  failed every PR touching `ansible-core`, `antsibull-docs`, or
+  `psycopg2-binary` — all copyleft-licensed and unavoidable for
+  Ansible-based projects — because `fail-on-license-violation` is never
+  passed to `actions/dependency-review-action`; the action fails on any
+  license outside `allow-licenses` regardless of that input. Renovate PRs
+  in `guide` and `docker.ansible` were blocked on this before the fix.
+
+---
+
 ## 2026-09-14
 
 ### Changed
