@@ -19,6 +19,11 @@ This is a rolling release - changes are deployed continuously to `main`.
   passed to `actions/dependency-review-action`; the action fails on any
   license outside `allow-licenses` regardless of that input. Renovate PRs
   in `guide` and `docker.ansible` were blocked on this before the fix.
+  `denied-licenses` drops `GPL-2.0` and `GPL-3.0` (default now `AGPL-3.0`)
+  so the generated report no longer lists the same license as both allowed
+  and denied; `denied-licenses` itself is never passed to
+  `actions/dependency-review-action` (only `allow-licenses` is) and only
+  feeds the summary report.
 
 ---
 

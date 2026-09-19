@@ -480,7 +480,7 @@ jobs:
 - `fail-on-severity` (optional): Minimum severity to fail (default: `moderate`)
 - `enable-license-check` (optional): Enable license compliance checking (default: `true`)
 - `allowed-licenses` (optional): Comma-separated list of allowed licenses (default: `Apache-2.0,BSD-2-Clause,BSD-3-Clause,ISC,MIT,0BSD,CC0-1.0,Unlicense,GPL-2.0-or-later,GPL-3.0-or-later,LGPL-2.0-or-later,LGPL-2.1-or-later,LGPL-3.0-or-later`)
-- `denied-licenses` (optional): Comma-separated list of denied licenses (default: `GPL-2.0,GPL-3.0,AGPL-3.0`)
+- `denied-licenses` (optional): Comma-separated list of denied licenses (default: `AGPL-3.0`)
 - `fail-on-license-violation` (optional): Fail workflow on license violations (default: `false`)
 
 **Jobs:**

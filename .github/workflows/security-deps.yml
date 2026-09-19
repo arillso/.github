@@ -22,7 +22,7 @@ on:
         description: 'Comma-separated list of allowed licenses'
       denied-licenses:
         type: string
-        default: 'GPL-2.0,GPL-3.0,AGPL-3.0'
+        default: 'AGPL-3.0'
         description: 'Comma-separated list of denied licenses'
       fail-on-license-violation:
         type: boolean
