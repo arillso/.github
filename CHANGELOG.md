@@ -14,6 +14,15 @@ This is a rolling release - changes are deployed continuously to `main`.
   run on `claude-opus-5-5` (was `claude-opus-4-8`), follow-up reviews on
   `claude-sonnet-5-5` (was `claude-sonnet-4-6`).
 
+### Fixed
+
+- **ai-claude-review.yml** and **ai-claude.yml** pin
+  `anthropics/claude-code-action` to v1.0.261. The review workflow still ran
+  v1.0.200, which installs Claude Code 2.1.240; Opus 5.5 needs 2.1.280 or newer,
+  so every review since the model switch aborted after one turn with
+  `is_error: true`. The review pin now names its exact release so Renovate
+  tracks it like the other one instead of a floating `v1` digest.
+
 ---
 
 ## 2026-09-19
