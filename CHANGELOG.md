@@ -6,6 +6,16 @@ This is a rolling release - changes are deployed continuously to `main`.
 
 ---
 
+## 2026-10-24
+
+### Changed
+
+- **ai-claude-review.yml** moves to the current Claude models: first reviews
+  run on `claude-opus-5-5` (was `claude-opus-4-8`), follow-up reviews on
+  `claude-sonnet-5-5` (was `claude-sonnet-4-6`).
+
+---
+
 ## 2026-09-19
 
 ### Fixed
