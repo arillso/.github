@@ -9,6 +9,8 @@ This directory contains reusable GitHub Actions workflows that can be called fro
 #### `release-ansible-collection.yml`
 
 Publishes Ansible Collections to Ansible Galaxy and creates GitHub Releases with changelog.
+Fails before publishing when the tag differs from the `version` in `galaxy.yml`
+or when `CHANGELOG.md` has no non-empty `## [VERSION]` section.
 
 **Usage:**
 

@@ -6,6 +6,28 @@ This is a rolling release - changes are deployed continuously to `main`.
 
 ---
 
+## 2026-10-29
+
+### Fixed
+
+- **release-ansible-collection.yml** fails the release before the Galaxy
+  publish when the tag differs from the `version` in `galaxy.yml`, or when
+  `CHANGELOG.md` is missing or has no non-empty section for the tag. Before,
+  a missing or empty section still set `found=true` and published a release
+  with empty notes. The section is now matched literally (dots in the version
+  no longer act as regex wildcards), and the last section in the file keeps
+  its final line.
+
+### Migration notes
+
+- Breaking: collections calling `release-ansible-collection.yml` must bump
+  `version` in `galaxy.yml` to the tag (no `v` prefix) and add a non-empty
+  `## [VERSION]` section to `CHANGELOG.md` before tagging. Releases that
+  previously published with GitHub's generated notes now fail before the
+  Galaxy publish.
+
+---
+
 ## 2026-10-24
 
 ### Changed

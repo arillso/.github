@@ -257,9 +257,9 @@ jobs:
   mid-publish.
 - **`run-name`** identifies the tag in the Actions list.
 - **Tags carry no `v` prefix** (`1.0.0`, not `v1.0.0`). The release workflow
-  derives the version as `${GITHUB_REF#refs/tags/}` and looks up `## [VERSION]`
-  in the CHANGELOG; a `v`-prefixed tag would not match the heading and the
-  workflow silently falls back to GitHub's generated release notes.
+  derives the version as `${GITHUB_REF#refs/tags/}`, requires it to equal the
+  `version` in `galaxy.yml`, and looks up `## [VERSION]` in the CHANGELOG; a
+  `v`-prefixed tag fails the `galaxy.yml` check before anything is published.
 
 ### CHANGELOG Format
 
@@ -267,7 +267,9 @@ All collections use [Keep a Changelog](https://keepachangelog.com/) with SemVer
 headings (not the date-based rolling format this `.github` repo uses for itself).
 Bootstrap new collections from [templates/CHANGELOG.md](./templates/CHANGELOG.md).
 The release workflow extracts the matching `## [VERSION]` section as release notes
-— so the heading (`## [1.0.0]`) must match the un-prefixed tag name exactly.
+— so the heading (`## [1.0.0]`) must match the un-prefixed tag name exactly. A
+missing `CHANGELOG.md`, a missing section or an empty one fails the release
+before the Galaxy publish.
 
 ### Cross-Collection Dependency Bounds
 
