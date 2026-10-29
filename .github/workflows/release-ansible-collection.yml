@@ -42,35 +42,40 @@ jobs:
         id: get_version
         run: echo "VERSION=${GITHUB_REF#refs/tags/}" >> "$GITHUB_OUTPUT"
 
+      - name: Validate tag against galaxy.yml
+        env:
+          VERSION: ${{ steps.get_version.outputs.VERSION }}
+        run: |
+          GALAXY_VERSION="$(yq -r '.version' galaxy.yml)"
+          if [ "$VERSION" != "$GALAXY_VERSION" ]; then
+            echo "::error file=galaxy.yml::Tag '$VERSION' does not match galaxy.yml version '$GALAXY_VERSION'"
+            exit 1
+          fi
+
       - name: Extract changelog for version
-        id: changelog
         env:
           VERSION: ${{ steps.get_version.outputs.VERSION }}
         run: |
           # The tag value reaches the shell via env:, never via workflow
-          # expression interpolation into the script body. It is additionally
-          # restricted to a version shape below, because env: alone does not
-          # neutralise regex metacharacters inside the sed address expressions.
-          case "$VERSION" in
-            *[!A-Za-z0-9.+_-]*|'')
-              echo "Unexpected version format: refusing to build a pattern from it" >&2
-              echo "found=false" >> "$GITHUB_OUTPUT"
-              exit 0
-              ;;
-          esac
-          # Extract the section for this version from CHANGELOG.md
-          if [ -f "CHANGELOG.md" ]; then
-            # Get content between this version and the next version heading
-            CONTENT=$(sed -n "/## \[$VERSION\]/,/## \[/p" CHANGELOG.md | sed '$d')
-            # If the version section is empty, try without brackets
-            if [ -z "$CONTENT" ]; then
-              CONTENT=$(sed -n "/## $VERSION/,/## /p" CHANGELOG.md | sed '$d')
-            fi
-            # Save to file for multiline support
-            echo "$CONTENT" > /tmp/changelog.txt
-            echo "found=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "found=false" >> "$GITHUB_OUTPUT"
+          # expression interpolation into the script body. awk compares the
+          # heading literally, so regex metacharacters in the tag are inert.
+          if [ ! -f "CHANGELOG.md" ]; then
+            echo "::error::CHANGELOG.md not found"
+            exit 1
+          fi
+          # Body between '## [VERSION]' (or '## VERSION') and the next '## '
+          # heading; trailing text such as ' - 2026-01-01' is ignored.
+          awk -v v="$VERSION" '
+            /^## / {
+              if (found) exit
+              h = $2; gsub(/^\[|\]$/, "", h)
+              if (h == v) { found = 1; next }
+            }
+            found { print }
+          ' CHANGELOG.md > /tmp/changelog.txt
+          if ! grep -q '[^[:space:]]' /tmp/changelog.txt; then
+            echo "::error file=CHANGELOG.md::No or empty '## [$VERSION]' section in CHANGELOG.md"
+            exit 1
           fi
 
       - name: Resolve Python version
@@ -104,7 +109,6 @@ jobs:
       - name: Create GitHub Release
         uses: softprops/action-gh-release@efb35369e0ad2afab669f228072c1b0d510eae64 # v3
         with:
-          body_path: ${{ steps.changelog.outputs.found == 'true' && '/tmp/changelog.txt' || '' }}
-          generate_release_notes: ${{ steps.changelog.outputs.found != 'true' }}
+          body_path: /tmp/changelog.txt
           draft: false
           prerelease: false
