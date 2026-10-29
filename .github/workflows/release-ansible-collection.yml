@@ -46,7 +46,16 @@ jobs:
         env:
           VERSION: ${{ steps.get_version.outputs.VERSION }}
         run: |
-          GALAXY_VERSION="$(yq -r '.version' galaxy.yml)"
+          if [ ! -f "galaxy.yml" ]; then
+            echo "::error::galaxy.yml not found"
+            exit 1
+          fi
+          # Top-level 'version:' only, surrounding quotes and comments dropped.
+          GALAXY_VERSION="$(sed -n -E "s/^version:[[:space:]]*['\"]?([^'\"#[:space:]]*).*/\1/p" galaxy.yml | head -n1)"
+          if [ -z "$GALAXY_VERSION" ]; then
+            echo "::error file=galaxy.yml::No version key in galaxy.yml"
+            exit 1
+          fi
           if [ "$VERSION" != "$GALAXY_VERSION" ]; then
             echo "::error file=galaxy.yml::Tag '$VERSION' does not match galaxy.yml version '$GALAXY_VERSION'"
             exit 1
@@ -57,20 +66,23 @@ jobs:
           VERSION: ${{ steps.get_version.outputs.VERSION }}
         run: |
           # The tag value reaches the shell via env:, never via workflow
-          # expression interpolation into the script body. awk compares the
-          # heading literally, so regex metacharacters in the tag are inert.
+          # expression interpolation into the script body. awk -v and index()
+          # keep it out of pattern text, so regex metacharacters stay literal.
           if [ ! -f "CHANGELOG.md" ]; then
             echo "::error::CHANGELOG.md not found"
             exit 1
           fi
-          # Body between '## [VERSION]' (or '## VERSION') and the next '## '
-          # heading; trailing text such as ' - 2026-01-01' is ignored.
+          # Body between '## [VERSION]...' (or '## VERSION ...') and the next
+          # '## ' heading or the trailing link reference definitions. Prefix
+          # match, same rule as templates/workflows/tag.yml, so date suffixes
+          # and linked headings ('## [1.0.0](url)') still match.
           awk -v v="$VERSION" '
+            { sub(/\r$/, "") }
             /^## / {
               if (found) exit
-              h = $2; gsub(/^\[|\]$/, "", h)
-              if (h == v) { found = 1; next }
+              if (index($0, "## [" v "]") == 1 || $0 == "## " v || index($0, "## " v " ") == 1) { found = 1; next }
             }
+            found && /^\[[^]]+\]: / { exit }
             found { print }
           ' CHANGELOG.md > /tmp/changelog.txt
           if ! grep -q '[^[:space:]]' /tmp/changelog.txt; then
