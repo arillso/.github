@@ -17,6 +17,14 @@ This is a rolling release - changes are deployed continuously to `main`.
   bump cannot be traced to what it brings. PRs opened by Renovate or Dependabot
   are exempt.
 
+### Fixed
+
+- **security-deps.yml** no longer fails the Dependency Review on TruffleHog
+  bumps. A new `allowed-dependencies` input (comma-separated purls,
+  default `pkg:githubactions/trufflesecurity/trufflehog`) exempts packages
+  from the license check. TruffleHog is AGPL-3.0, which is not on the
+  allowlist, but it only runs as a CI action and is never distributed.
+
 ---
 
 ## 2026-10-29
