@@ -117,6 +117,37 @@ jobs:
           done < <(grep -oP '^#### `\K[^`]+\.yml(?=`$)' "$README")
           exit $errors
 
+  # Consumers pin the `YYYY-MM-DD` tags that `merge.yml` moves on every merge,
+  # and `CHANGELOG.md` is the only record of what a tag bump brings them. A PR
+  # touching workflows, presets or composite actions must therefore also touch
+  # the changelog. Renovate and Dependabot are exempt: their digest and pin bumps
+  # are automerged and carry their own PR history, and a gate on them would stall
+  # every one. The checkout is the PR merge commit, so `HEAD^1` is the current
+  # base and the diff is exactly what the merge would bring.
+  changelog-gate:
+    name: Changelog Gate
+    if: >-
+      github.event.pull_request.user.login != 'renovate[bot]' &&
+      github.event.pull_request.user.login != 'dependabot[bot]'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          fetch-depth: 2
+      - name: Assert CHANGELOG.md changes with workflows, presets and actions
+        run: |
+          set -euo pipefail
+          changed=$(git diff --name-only HEAD^1 HEAD)
+          gated=$(grep -E '^(\.github/workflows/[^/]+\.yml|renovate-[^/]+\.json|actions/)' <<<"$changed" || true)
+          [ -n "$gated" ] || { echo "No workflow, preset or action changed."; exit 0; }
+          grep -qx 'CHANGELOG.md' <<<"$changed" && { echo "CHANGELOG.md updated."; exit 0; }
+          echo "::error file=CHANGELOG.md::CHANGELOG.md not updated, but these files changed:"
+          printf '%s\n' "$gated"
+          exit 1
+
   # `ci-ansible-molecule.yml` pipes the molecule output through `tee` so the
   # failure text survives in the job summary and an artifact. Two ways that can
   # break silently: dropping `set -o pipefail` makes every red run report green,

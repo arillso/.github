@@ -150,7 +150,11 @@ when a newer date tag exists.
    [pull-request.yml](./.github/workflows/pull-request.yml) enforces this;
    omitting the list because "there is only one job" is what made the README
    drift before.
-5. **CHANGELOG**: Document changes in [CHANGELOG.md](./CHANGELOG.md)
+5. **CHANGELOG**: Document changes in [CHANGELOG.md](./CHANGELOG.md). The
+   `changelog-gate` job in [pull-request.yml](./.github/workflows/pull-request.yml)
+   fails any PR that changes a workflow, a `renovate-*.json` preset or a
+   composite action under `actions/` without touching `CHANGELOG.md`; only
+   Renovate and Dependabot PRs are exempt.
 
 ### Modifying Existing Workflows
 
