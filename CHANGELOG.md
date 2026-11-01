@@ -6,6 +6,19 @@ This is a rolling release - changes are deployed continuously to `main`.
 
 ---
 
+## 2026-11-01
+
+### Added
+
+- **pull-request.yml** gains a `changelog-gate` job: a PR that changes a file
+  under `.github/workflows/*.yml`, a `renovate-*.json` preset or anything under
+  `actions/` fails unless it also changes `CHANGELOG.md`. Consumers pin the date
+  tags `merge.yml` moves on every merge, and without a changelog entry a tag
+  bump cannot be traced to what it brings. PRs opened by Renovate or Dependabot
+  are exempt.
+
+---
+
 ## 2026-10-29
 
 ### Fixed
