@@ -306,6 +306,11 @@ file, otherwise `3.11`. So `.python-version` is authoritative for the publish
 build with no extra wiring — only pass `python_version` to override it for a
 specific release.
 
+`security-code.yml` follows the same order for its Python analysis: the
+`python-version` input when set, otherwise `.python-version`, otherwise `3.12`.
+The CodeQL scan therefore installs `requirements.txt` on the pinned Python
+without a `python-version` pin in the caller.
+
 ---
 
 ## Repository Structure

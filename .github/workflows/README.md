@@ -318,7 +318,7 @@ jobs:
 - `node-version-file` (optional): Node version file for JS/TS projects (default: `.nvmrc`)
 - `go-version` (optional): Go version for Go projects; leave empty to derive it from `go-version-file` (default: empty)
 - `go-version-file` (optional): Go version file for Go projects, ignored when `go-version` is set; falls back to `stable` when the file does not exist (default: `go.mod`)
-- `python-version` (optional): Python version for Python projects (default: `3.12`)
+- `python-version` (optional): Python version for Python projects; leave empty to read the repo-root `.python-version` file, falling back to `3.12` when it does not exist (default: empty)
 - `package-manager` (optional): Package manager override (npm, pnpm, yarn); auto-detected from lock files if empty
 - `build-command` (optional): Custom build command; autobuild if empty
 - `paths-ignore` (optional): Comma-separated list of paths to ignore (default: `node_modules,dist,coverage,**/*.spec.ts,**/*.test.ts`)

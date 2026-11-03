@@ -6,6 +6,21 @@ This is a rolling release - changes are deployed continuously to `main`.
 
 ---
 
+## 2026-11-03
+
+### Fixed
+
+- **security-code.yml** resolves the Python version from the repo-root
+  `.python-version` file when the `python-version` input is not set
+  (input → `.python-version` → `3.12` fallback), the same order
+  `release-ansible-collection.yml` uses. The input default changed from `3.12`
+  to empty. Before, every caller without an explicit `python-version` ran the
+  CodeQL Python job on 3.12 regardless of its pin, so a `requirements.txt` that
+  needs a newer Python failed to install. Callers that pass `python-version`
+  are unaffected.
+
+---
+
 ## 2026-11-01
 
 ### Added
