@@ -26,8 +26,8 @@ on:
         description: 'Go version file (for Go projects). Ignored when go-version is set.'
       python-version:
         type: string
-        default: '3.12'
-        description: 'Python version (for Python projects)'
+        default: ''
+        description: 'Python version (for Python projects). Leave empty to read the repo-root .python-version file, falling back to 3.12.'
       package-manager:
         type: string
         default: ''
@@ -189,11 +189,34 @@ jobs:
           go-version-file: ${{ inputs.go-version == '' && steps.detect-go.outputs.present == 'true' && inputs.go-version-file || '' }}
           cache: true
 
+      # Input → repo-root .python-version → 3.12, same order as
+      # release-ansible-collection.yml, so the scan installs requirements.txt
+      # on the Python the repo pins instead of a stale default.
+      - name: Resolve Python version
+        id: python
+        if: matrix.language == 'python'
+        env:
+          PYTHON_VERSION_INPUT: ${{ inputs.python-version }}
+        run: |
+          set -euo pipefail
+          FILE_VERSION=""
+          if [ -f ".python-version" ]; then
+            FILE_VERSION="$(head -n1 .python-version | tr -d '[:space:]')"
+          fi
+          if [ -n "$PYTHON_VERSION_INPUT" ]; then
+            VERSION="$PYTHON_VERSION_INPUT"
+          elif [ -n "$FILE_VERSION" ]; then
+            VERSION="$FILE_VERSION"
+          else
+            VERSION="3.12"
+          fi
+          printf 'version=%s\n' "$VERSION" >> "$GITHUB_OUTPUT"
+
       - name: Setup Python
         if: matrix.language == 'python'
         uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
         with:
-          python-version: ${{ inputs.python-version }}
+          python-version: ${{ steps.python.outputs.version }}
           cache: 'pip'
 
       # Build steps - JavaScript/TypeScript
