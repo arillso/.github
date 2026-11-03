@@ -118,7 +118,7 @@ when a newer date tag exists.
 | SBOM Generation | [security-sbom.yml](./.github/workflows/security-sbom.yml) | CycloneDX/SPDX SBOMs for containers, filesystems, Go binaries |
 | Trivy Scanning | [security-trivy.yml](./.github/workflows/security-trivy.yml) | Filesystem & container vulnerability scanning |
 | Dependency Audit | [security-deps.yml](./.github/workflows/security-deps.yml) | govulncheck, license compliance, dependency review |
-| Secret Detection | [security-secrets.yml](./.github/workflows/security-secrets.yml) | Gitleaks, TruffleHog, custom pattern detection |
+| Secret Detection | [security-secrets.yml](./.github/workflows/security-secrets.yml) | Gitleaks, TruffleHog, AWS-key and private-key pattern checks |
 
 ### Publishing & Operations
 
