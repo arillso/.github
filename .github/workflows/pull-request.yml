@@ -249,6 +249,27 @@ jobs:
       - name: Assert caller inputs reach shell bodies through env
         run: scripts/tests/test-workflow-input-injection.sh
 
+  # ai-claude-review.yml cannot be exercised end to end in its own pull request:
+  # claude-code-action refuses to run when its workflow file differs from the
+  # default branch. This guard runs the shipped permission-denial report against
+  # fixtures and pins the `--allowedTools` read scope to arillso repositories,
+  # so both regress here rather than in a consumer's blocked pull request.
+  claude-review-guard:
+    name: Claude Review Guard
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7
+        with:
+          python-version: '3.15.2'
+      - name: Install pyyaml
+        run: python3 -m pip install --disable-pip-version-check pyyaml
+      - name: Assert denial report and read scope of claude-review
+        run: scripts/tests/test-claude-review.sh
+
   # The `.rst` customManager in renovate-base.json rewrites SHA-pinned actions
   # inside documentation examples, where placeholder SHAs and deliberate
   # counter-examples sit in the same file and must stay untouched. No

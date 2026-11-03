@@ -134,7 +134,8 @@ jobs:
             echo "::warning::GitHub API call failed; review-mode detection degraded (mode=$MODE)."
           fi
 
-      - uses: anthropics/claude-code-action@d70510b174a1244958df0b03166a54912811f3e6 # v1.0.264
+      - id: review
+        uses: anthropics/claude-code-action@d70510b174a1244958df0b03166a54912811f3e6 # v1.0.264
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           classify_inline_comments: 'false'
@@ -255,3 +256,23 @@ jobs:
               }
             '
             ```
+
+      # The action logs only `permission_denials_count`, so a refused tool call
+      # (the cause behind arillso/ansible.system#286) stayed invisible. Its
+      # execution file holds the full SDK message list; surface each denial as
+      # one warning. `tojson` keeps a multi-line tool input on one line, so the
+      # input cannot open a second workflow command, and the cut to 300
+      # characters keeps a large input from flooding the log. A missing or
+      # unparsable file degrades to a warning: this step reports, it never
+      # decides the job.
+      - name: Report permission denials
+        if: always() && steps.review.outputs.execution_file != ''
+        env:
+          EXEC_FILE: ${{ steps.review.outputs.execution_file }}
+        run: |
+          set -euo pipefail
+          [ -f "$EXEC_FILE" ] || exit 0
+          jq -r '
+            .[] | select(.type == "result") | .permission_denials[]?
+            | "::warning::permission denied: \(.tool_name | tostring | gsub("[\r\n]"; " ")) \(.tool_input | tojson | .[0:300])"
+          ' "$EXEC_FILE" || echo "::warning::could not parse the Claude execution file"
