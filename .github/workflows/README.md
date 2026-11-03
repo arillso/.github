@@ -511,7 +511,7 @@ jobs:
 - `working-directory` (optional): Working directory for scans (default: `.`)
 - `enable-gitleaks` (optional): Enable Gitleaks scanning (default: `true`)
 - `enable-trufflehog` (optional): Enable TruffleHog scanning (default: `true`)
-- `enable-pattern-detection` (optional): Enable custom pattern detection (default: `true`)
+- `enable-pattern-detection` (optional): Enable the key-pattern checks for AWS access keys and private-key content, both hard-failing (default: `true`)
 - `cancel-in-progress` (optional): Cancel in-progress runs in the same concurrency group (default: `true`)
 - `concurrency-suffix` (optional): Suffix appended to the concurrency group for parallel invocations (default: `''`)
 
@@ -519,7 +519,7 @@ jobs:
 
 - gitleaks (fast secret detection)
 - trufflehog (git history scanning, verified only)
-- pattern-detection (AWS keys, private keys, hardcoded secrets)
+- pattern-detection (AWS keys, private keys)
 - security-report
 
 ---

@@ -8,6 +8,20 @@ This is a rolling release - changes are deployed continuously to `main`.
 
 ## 2026-11-03
 
+### Removed
+
+- **security-secrets.yml** drops the `Generic Secret Patterns` step from the
+  `pattern-detection` job. Its `password:`/`apiKey:`/`token:` greps over YAML
+  matched Jinja expressions (`password: "{{ item.password }}"`), Actions
+  expressions (`galaxy_api_key: ${{ secrets.GALAXY_API_KEY }}`) and the OIDC
+  permission `id-token: write`, so every consumer saw three warnings per run
+  with no secret behind them, and real hits drowned in that noise. The step
+  warned only and could never fail the job, so no gate is lost; Gitleaks and
+  TruffleHog remain the secret scanners. The AWS-key and private-key checks
+  and the input name `enable-pattern-detection` are unchanged; the input
+  description and the report row now name the two checks that actually run.
+  Consumers need no action.
+
 ### Fixed
 
 - **security-code.yml** resolves the Python version from the repo-root
