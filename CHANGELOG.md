@@ -8,6 +8,13 @@ This is a rolling release - changes are deployed continuously to `main`.
 
 ## 2026-11-03
 
+### Added
+
+- **pull-request.yml** gains a `claude-review-guard` job running
+  `scripts/tests/test-claude-review.sh`: it executes the shipped
+  permission-denial step of `ai-claude-review.yml` against fixtures and pins
+  the `--allowedTools` read scope to `arillso/*`.
+
 ### Removed
 
 - **security-secrets.yml** drops the `Generic Secret Patterns` step from the
@@ -24,6 +31,17 @@ This is a rolling release - changes are deployed continuously to `main`.
 
 ### Fixed
 
+- **ai-claude-review.yml** no longer blocks a pull request on a finding it
+  cannot verify. In arillso/ansible.system#286 the reviewer requested changes
+  three times on an input name it could not check, because it had no read
+  access to the referenced reusable workflow, ignored the counter-evidence in
+  its thread and submitted no review at all on a rerun. The reviewer may now
+  read files from `arillso/*` repositories, weighs replies and PR comments
+  from the author and maintainers, lists unverifiable suspicions in the review
+  body as non-blocking instead of opening inline threads, always submits one
+  review (also on a rerun with an empty delta), and logs every refused tool
+  call as a warning. Inputs, outputs and secrets are unchanged; consumers need
+  no action.
 - **security-code.yml** resolves the Python version from the repo-root
   `.python-version` file when the `python-version` input is not set
   (input → `.python-version` → `3.12` fallback), the same order
