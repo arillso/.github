@@ -571,6 +571,25 @@ review (using Claude Sonnet to keep cost down), replies to its prior inline
 comments, and resolves threads once issues are addressed. Skips draft PRs,
 renovate[bot]/dependabot[bot] PRs, and fork PRs (which run without secrets).
 
+Evidence handling:
+
+- **Reading arillso repositories:** the reviewer may read files from any
+  `arillso/*` repository through the contents API (`gh api
+  repos/arillso/*/contents/*`), so a referenced reusable workflow or action can
+  be checked instead of guessed. Nothing outside `arillso/*` is readable.
+- **Counter-evidence:** on follow-up the reviewer reads replies to its threads
+  and the PR conversation, but only from the PR author or a maintainer
+  (`author_association` OWNER, MEMBER or COLLABORATOR). It checks the evidence
+  rather than adopting it: a finding it can still evidence stays open.
+- **Unverified findings never block:** a suspicion the reviewer cannot verify
+  is listed in the review body under `Unverified, non-blocking:` and gets no
+  inline thread, because the ruleset requires every thread to be resolved.
+- **Reruns:** a rerun on the same HEAD still submits exactly one review, so a
+  counter-argument posted after the last push is picked up.
+- **Permission denials:** every tool call the action refused is logged as a
+  `::warning::permission denied: <tool> <input>` line (input cut to 300
+  characters).
+
 **Usage:**
 
 ```yaml
@@ -598,7 +617,7 @@ jobs:
 
 **Jobs:**
 
-- claude-review (first pass full review, follow-up pushes delta only)
+- claude-review (first pass full review, follow-up pushes delta only; reports permission denials as warnings)
 
 ---
 
