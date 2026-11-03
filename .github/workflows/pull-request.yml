@@ -31,7 +31,7 @@ jobs:
       enable_shellcheck: true
       # Runs against the repo's own `.yamllint.yml`, which extends
       # templates/.yamllint.yml and raises line-length to 600 — the only
-      # override. It exists for the 515-char `--allowedTools` line in
+      # override. It exists for the 555-char `--allowedTools` line in
       # `ai-claude-review.yml`, which is comma-separated and cannot be folded:
       # YAML block folding inserts a space after each newline, corrupting the
       # tool names. The org template keeps its 500-char limit.
