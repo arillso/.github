@@ -589,6 +589,13 @@ Evidence handling:
 - **Permission denials:** every tool call the action refused is logged as a
   `::warning::permission denied: <tool> <input>` line (input cut to 300
   characters).
+- **Review assertion:** after the action, the job checks that a Claude review
+  landed on the PR's head SHA. No review because the PR changes a workflow file
+  that differs from the default branch (the action's workflow validation skips
+  itself) → green, plus a `<!-- claude-review-skipped -->` PR comment saying the
+  diff needs a manual review. No review for any other reason (expired token,
+  exhausted `--max-turns`, timeout) → red, plus a
+  `<!-- claude-review-missing -->` PR comment. Each comment is posted once.
 
 **Usage:**
 
@@ -617,7 +624,7 @@ jobs:
 
 **Jobs:**
 
-- claude-review (first pass full review, follow-up pushes delta only; reports permission denials as warnings)
+- claude-review (first pass full review, follow-up pushes delta only; reports permission denials as warnings; fails when no review landed on the head SHA, except for a workflow-validation skip)
 
 ---
 
