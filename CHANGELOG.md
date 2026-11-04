@@ -24,6 +24,14 @@ This is a rolling release - changes are deployed continuously to `main`.
   the check instead of passing it.
 - **pull-request.yml** `claude-review-guard` also runs the new step against a
   stubbed `gh`, covering the review, skip and missing-review branches.
+- **ci-ansible-collection.yml** pins `ansible-core<2.22` in the `unit-test`
+  and `integration-test` jobs. Both installed `ansible-core` unversioned and
+  picked up 2.22.0 once it reached PyPI; its default `ansible-test --docker`
+  container fails to start on `ubuntu-24.04` at the
+  `mount -o remount,rw /sys/fs/cgroup/` init step (ansible/ansible#87731), so
+  both jobs failed before running a single test. `sanity-test`, `ansible-lint`
+  and `build` are unaffected and stay unchanged. Drop the pin once #87731 is
+  fixed. Consumers get the fix by bumping their date-tag pin.
 
 ---
 

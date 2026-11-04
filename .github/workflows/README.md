@@ -72,8 +72,8 @@ jobs:
 - markdown-lint
 - security-scan (Trivy)
 - sanity-test (Ansible sanity tests)
-- unit-test (optional)
-- integration-test (optional)
+- unit-test (optional; installs ansible-core<2.22 until ansible/ansible#87731 is fixed)
+- integration-test (optional; installs ansible-core<2.22 until ansible/ansible#87731 is fixed)
 - build (collection artifact)
 
 ---

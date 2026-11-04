@@ -252,8 +252,11 @@ jobs:
         with:
           python-version: ${{ inputs.python_version }}
 
+      # ansible-core 2.22's default ansible-test container fails to start on
+      # ubuntu-24.04 (cgroup remount, ansible/ansible#87731). Drop the pin once
+      # that is fixed upstream.
       - name: Install Ansible
-        run: pip install ansible-core
+        run: pip install 'ansible-core<2.22'
 
       - name: Run unit tests
         run: ansible-test units --docker --color
@@ -275,8 +278,11 @@ jobs:
         with:
           python-version: ${{ inputs.python_version }}
 
+      # ansible-core 2.22's default ansible-test container fails to start on
+      # ubuntu-24.04 (cgroup remount, ansible/ansible#87731). Drop the pin once
+      # that is fixed upstream.
       - name: Install Ansible
-        run: pip install ansible-core
+        run: pip install 'ansible-core<2.22'
 
       - name: Run integration tests
         run: ansible-test integration --docker --color
