@@ -12,6 +12,10 @@
 # 2. `--allowedTools` grants read access to files in arillso repositories — and
 #    only there. A broadened `repos/*/contents` pattern would let the agent that
 #    holds `gh pr review --approve` read any repository the token reaches.
+# 3. The `Assert a review was posted` step tells a review on the head SHA, a
+#    workflow-validation skip and a missing review apart. Its `run:` body runs
+#    against a stubbed `gh`, because the action skips itself in exactly the pull
+#    requests that change this file.
 #
 # Run: scripts/tests/test-claude-review.sh
 set -euo pipefail
@@ -20,6 +24,7 @@ HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO="$(cd "$HERE/../.." && pwd)"
 WORKFLOW="$REPO/.github/workflows/ai-claude-review.yml"
 STEP_NAME="Report permission denials"
+GUARD_NAME="Assert a review was posted"
 ARILLSO_READ='Bash(gh api repos/arillso/*/contents/*)'
 
 fail() {
@@ -33,17 +38,22 @@ trap 'rm -rf "$tmp"' EXIT
 # Pull the step's `if`, its `run` body and the action's `claude_args` out of the
 # parsed YAML. A parser rather than awk: the `if` and the body are block
 # scalars, and the allowedTools line sits inside another block scalar.
-python3 - "$WORKFLOW" "$STEP_NAME" "$tmp" <<'PY' || fail "step '$STEP_NAME' not found"
+python3 - "$WORKFLOW" "$STEP_NAME" "$GUARD_NAME" "$tmp" <<'PY' || fail "step '$STEP_NAME' or '$GUARD_NAME' not found"
 import pathlib
 import sys
 
 import yaml
 
-wf, name, out = sys.argv[1], sys.argv[2], pathlib.Path(sys.argv[3])
+wf, name, guard_name, out = sys.argv[1], sys.argv[2], sys.argv[3], pathlib.Path(sys.argv[4])
 steps = yaml.safe_load(pathlib.Path(wf).read_text())["jobs"]["claude-review"]["steps"]
 step = next((s for s in steps if s.get("name") == name), None)
-if step is None:
+guard = next((s for s in steps if s.get("name") == guard_name), None)
+if step is None or guard is None:
     sys.exit(1)
+(out / "guard_if").write_text(str(guard.get("if", "")))
+(out / "guard.sh").write_text(guard["run"])
+(out / "marker").write_text(guard["env"]["MARKER"])
+(out / "skip_marker").write_text(guard["env"]["SKIP_MARKER"])
 action = next(s for s in steps if str(s.get("uses", "")).startswith("anthropics/claude-code-action@"))
 (out / "if").write_text(str(step.get("if", "")))
 (out / "run.sh").write_text(step["run"])
@@ -105,4 +115,78 @@ hits="$({ grep -oF "$ARILLSO_READ" <<<"$args" || true; } | wc -l)"
 [ "$hits" -eq 1 ] || fail "--allowedTools must contain '$ARILLSO_READ' exactly once (found $hits)"
 ! grep -qF 'repos/*/contents' <<<"$args" || fail "--allowedTools grants repos/*/contents — read access must stay on arillso/*"
 
-echo "PASS: claude-review reports permission denials and reads only arillso repositories"
+# Guard: `!cancelled()`, not `always()` — a superseded run has no review on its
+# head SHA and would red the check while the newer run posts one.
+guard_if="$(cat "$tmp/guard_if")"
+case "$guard_if" in *'!cancelled()'*) ;; *) fail "guard if lacks !cancelled(): $guard_if" ;; esac
+
+# Stub for the guard's `gh` calls. Fixtures come from GH_FIX_* variables; a
+# missing GH_FIX_BASE_BLOB answers like the 404 of a file absent on the default
+# branch. `pr comment` calls are logged so a test can assert what was posted.
+mkdir "$tmp/bin"
+cat >"$tmp/bin/gh" <<'STUB'
+#!/usr/bin/env bash
+case "$*" in
+"pr comment"*) printf '%s\n' "$*" >>"$GH_FIX_LOG" ;;
+*/reviews*) printf '%s' "$GH_FIX_REVIEWS" ;;
+*/files*) printf '%s' "$GH_FIX_FILES" ;;
+*/issues/*/comments*) printf '%s' "${GH_FIX_COMMENTS:-[]}" ;;
+*/contents/*"ref=$HEAD_SHA"*) printf '%s\n' "$GH_FIX_HEAD_BLOB" ;;
+*/contents/*) [ -n "${GH_FIX_BASE_BLOB:-}" ] || exit 1; printf '%s\n' "$GH_FIX_BASE_BLOB" ;;
+*) echo "unexpected gh call: $*" >&2; exit 2 ;;
+esac
+STUB
+chmod +x "$tmp/bin/gh"
+
+MARKER="$(cat "$tmp/marker")"
+SKIP_MARKER="$(cat "$tmp/skip_marker")"
+BOT_ON_HEAD='[{"user":{"type":"Bot","login":"claude[bot]"},"commit_id":"head"}]'
+BOT_ON_OLD='[{"user":{"type":"Bot","login":"claude[bot]"},"commit_id":"old"}]'
+WF_CHANGED='[{"filename":".github/workflows/ai-claude-review.yml","status":"modified"}]'
+
+# Runs the extracted guard body; reviews, changed files and the default-branch
+# blob SHA are the inputs, the head blob SHA is always `new`. Sets `rc`.
+guard() {
+  : >"$tmp/comments.log"
+  rc=0
+  PATH="$tmp/bin:$PATH" REPO=o/r PR=1 HEAD_SHA=head DEFAULT_BRANCH=main \
+    MARKER="$MARKER" SKIP_MARKER="$SKIP_MARKER" GH_FIX_LOG="$tmp/comments.log" \
+    GH_FIX_REVIEWS="$1" GH_FIX_FILES="$2" GH_FIX_HEAD_BLOB=new GH_FIX_BASE_BLOB="$3" \
+    bash "$tmp/guard.sh" >"$tmp/guard.out" 2>&1 || rc=$?
+}
+
+posted() {
+  grep -cF -- "$1" "$tmp/comments.log" || true
+}
+
+# A bot review on the head SHA passes without a comment.
+guard "$BOT_ON_HEAD" '[]' ''
+[ "$rc" -eq 0 ] || fail "review on head SHA failed the guard: $(cat "$tmp/guard.out")"
+[ ! -s "$tmp/comments.log" ] || fail "review on head SHA still posted a comment"
+
+# A changed workflow file that differs from the default branch is a skip: green,
+# with the skip comment. A review on an older SHA does not count.
+guard "$BOT_ON_OLD" "$WF_CHANGED" old
+[ "$rc" -eq 0 ] || fail "workflow-validation skip went red: $(cat "$tmp/guard.out")"
+[ "$(posted "$SKIP_MARKER")" -eq 1 ] || fail "skip did not post the skip comment"
+grep -q '^::notice::Review skipped' "$tmp/guard.out" || fail "skip did not emit a notice"
+
+# A workflow file the default branch has never seen is a skip too.
+guard '[]' "$WF_CHANGED" ''
+[ "$rc" -eq 0 ] || fail "new workflow file did not count as a skip: $(cat "$tmp/guard.out")"
+
+# An existing skip comment is not posted twice.
+GH_FIX_COMMENTS="[{\"body\":\"$SKIP_MARKER\"}]" guard '[]' "$WF_CHANGED" old
+[ "$rc" -eq 0 ] && [ ! -s "$tmp/comments.log" ] || fail "skip comment was posted twice"
+
+# No review and no differing workflow file is a missing review: red, with the
+# missing comment. Covers no workflow change, an unchanged blob and a removal.
+for case in '[{"filename":"README.md","status":"modified"}]|' "$WF_CHANGED|new" \
+  '[{"filename":".github/workflows/x.yml","status":"removed"}]|'; do
+  guard '[]' "${case%|*}" "${case##*|}"
+  [ "$rc" -eq 1 ] || fail "missing review did not fail the guard for ${case%|*}: $(cat "$tmp/guard.out")"
+  [ "$(posted "$MARKER")" -eq 1 ] || fail "missing review did not post the missing comment for ${case%|*}"
+  [ "$(posted "$SKIP_MARKER")" -eq 0 ] || fail "missing review was reported as a skip for ${case%|*}"
+done
+
+echo "PASS: claude-review reports permission denials, reads only arillso repositories and asserts a review"

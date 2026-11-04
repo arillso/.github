@@ -6,6 +6,27 @@ This is a rolling release - changes are deployed continuously to `main`.
 
 ---
 
+## 2026-11-04
+
+### Fixed
+
+- **ai-claude-review.yml** no longer reports a skipped or failed review as a
+  clean one. When a pull request changes a workflow file that differs from the
+  default branch, claude-code-action skips itself and exits 0, so
+  `claude-review` went green with no review attached — indistinguishable from a
+  review without findings (seen on #208, open since #71). A new
+  `Assert a review was posted` step, ported from sbaerlocher/.github, now checks
+  for a Claude review on the head SHA: a workflow-validation skip stays green
+  but posts a `<!-- claude-review-skipped -->` comment asking for a manual
+  review; any other missing review (expired token, exhausted `--max-turns`,
+  timeout) turns the check red and posts a `<!-- claude-review-missing -->`
+  comment. Consumers need no action, but a review run that crashes now fails
+  the check instead of passing it.
+- **pull-request.yml** `claude-review-guard` also runs the new step against a
+  stubbed `gh`, covering the review, skip and missing-review branches.
+
+---
+
 ## 2026-11-03
 
 ### Added
