@@ -11,15 +11,15 @@ This is a rolling release - changes are deployed continuously to `main`.
 ### Fixed
 
 - **renovate-ansible.json** the `<3.15` cap on `.python-version` now takes
-  effect. The rule matched `matchDatasources: ["python-version"]`, but
-  Renovate's native `pyenv` manager reads `.python-version` through the
+  effect. The existing rule matches `matchDatasources: ["python-version"]`,
+  but Renovate's native `pyenv` manager reads `.python-version` through the
   `docker` datasource, so the cap never applied and `arillso/ansible.system`
-  was bumped to 3.15.x. The rule now matches the file (`matchFileNames`)
-  instead of a datasource, which covers both the `pyenv` manager and the
-  `python-version` custom manager in this preset, while `python` images in
-  Dockerfiles and workflows stay uncapped. Renovate does not downgrade:
-  collections already on 3.15.x need a one-time manual reset to 3.14.x.
-  Consumers get the fix by bumping their date-tag pin.
+  was bumped to 3.15.x. A second rule now caps `python` in `.python-version`
+  by file (`matchFileNames`); the datasource rule stays, so role defaults and
+  other pins annotated with the `python-version` datasource remain capped,
+  and `python` images in Dockerfiles and workflows stay uncapped. Renovate
+  does not downgrade: collections already on 3.15.x need a one-time manual
+  reset to 3.14.x. Consumers get the fix by bumping their date-tag pin.
 
 ---
 

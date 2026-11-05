@@ -36,7 +36,13 @@
     },
     {
       "description": "ansible-test supports Python 3.14 at most (stable-2.20 and devel) and rejects newer interpreters, so .python-version must not follow the latest released Python. release-ansible-collection.yml falls back to .python-version when the caller passes no python_version, so an unbounded bump would build the release artifact on an interpreter the CI never tested. Raise this bound only once the sanity matrix in ci-ansible-collection.yml runs a branch that accepts the newer interpreter.",
-      "matchFileNames": [".python-version", "**/.python-version"],
+      "matchDatasources": ["python-version"],
+      "matchDepNames": ["python"],
+      "allowedVersions": "<3.15"
+    },
+    {
+      "description": "Same cap for .python-version as read by Renovate's native pyenv manager, which resolves python through the docker datasource and so is not matched by the python-version rule above. allowedVersions falls back to npm-semver ranges for docker versioning, which handles `<3.15`. Scoped by file so python images in Dockerfiles and workflows stay uncapped.",
+      "matchFileNames": ["**/.python-version"],
       "matchDepNames": ["python"],
       "allowedVersions": "<3.15"
     }
