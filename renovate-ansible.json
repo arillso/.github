@@ -39,6 +39,12 @@
       "matchDatasources": ["python-version"],
       "matchDepNames": ["python"],
       "allowedVersions": "<3.15"
+    },
+    {
+      "description": "Same cap for .python-version as read by Renovate's native pyenv manager, which resolves python through the docker datasource and so is not matched by the python-version rule above. allowedVersions falls back to npm-semver ranges for docker versioning, which handles `<3.15`. Scoped by file so python images in Dockerfiles and workflows stay uncapped.",
+      "matchFileNames": ["**/.python-version"],
+      "matchDepNames": ["python"],
+      "allowedVersions": "<3.15"
     }
   ],
   "ansible-galaxy": {
