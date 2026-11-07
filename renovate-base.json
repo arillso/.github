@@ -104,6 +104,11 @@
       "matchPackageNames": ["arillso/**", "docker.io/arillso/**", "index.docker.io/arillso/**"],
       "matchUpdateTypes": ["digest"],
       "minimumReleaseAge": null
+    },
+    {
+      "description": "Repology never reports a release timestamp (Alpine apk pins from renovate-alpine.json, or any `datasource=repology` marker). Waived explicitly by datasource, so the rule survives an Alpine release bump in renovate-alpine.json and does not depend on the order of `extends`. It sits after the major rule, so it also lifts the 7-day major gate, and it bypasses a consumer's `minimumReleaseAgeBehaviour: timestamp-required` as well: without a timestamp that setting would hold these updates forever, not delay them.",
+      "matchDatasources": ["repology"],
+      "minimumReleaseAge": null
     }
   ],
   "lockFileMaintenance": {
