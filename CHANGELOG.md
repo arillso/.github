@@ -59,10 +59,13 @@ This is a rolling release - changes are deployed continuously to `main`.
   reported them without a release timestamp ("did not have a releaseTimestamp"
   on the action.playbook Dependency Dashboard); the images are first-party and
   built by arillso CI. Version updates keep their cooldown.
-- **renovate-alpine.json** Alpine apk pins (repology datasource) waive the
-  release-age gate. Repology never reports a release timestamp, so every run
-  logged "did not have a releaseTimestamp" on the docker.ansible Dependency
-  Dashboard; the updates already went through without a cooldown.
+- **renovate-base.json** updates from the `repology` datasource (Alpine apk
+  pins from `renovate-alpine.json`) waive the release-age gate. Repology never
+  reports a release timestamp, so every run logged "did not have a
+  releaseTimestamp" on the docker.ansible Dependency Dashboard. Under
+  `timestamp-optional` they already went through without a cooldown; the rule
+  also lifts the 7-day major gate and bypasses a consumer's
+  `timestamp-required`, which would otherwise hold them forever.
 
 ---
 

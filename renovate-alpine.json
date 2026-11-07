@@ -18,12 +18,11 @@
   ],
   "packageRules": [
     {
-      "description": "Alpine packages (repology). Repology never reports a release timestamp, so `minimumReleaseAge` is waived explicitly: under `minimumReleaseAgeBehaviour: timestamp-optional` these updates already go through without a cooldown, but logged a 'did not have a releaseTimestamp' warning on every run (docker.ansible Mend log, 2026-11-07 15:26). The packages come from the Alpine release branch, whose updates are distro-maintained fixes.",
+      "description": "Alpine packages (repology)",
       "matchManagers": ["custom.regex"],
       "matchDatasources": ["repology"],
       "matchPackageNames": ["/^alpine_3_24\\//"],
-      "groupName": "Alpine packages",
-      "minimumReleaseAge": null
+      "groupName": "Alpine packages"
     }
   ]
 }
