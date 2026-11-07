@@ -393,8 +393,20 @@ Configured in `renovate-base.json`:
   versions current without a manual audit.
 - Vulnerability alerts run on their own schedule (`at any time`) instead of
   waiting for the regular update window.
-- Lockfile maintenance runs weekly (Monday before 6am) and automerges, so
-  transitive updates inside lockfiles do not accumulate between direct bumps.
+- Renovate merges automerge PRs itself (`platformAutomerge: false`) through
+  its bypass in the `main-branch-protection` ruleset (app `2740`, `always`);
+  GitHub auto-merge would wait for the required approval. Trade-offs: a merge
+  waits for the next Renovate run, and PRs are rebased only on a merge conflict
+  (`rebaseWhen: conflicted`), so they are not re-tested against the latest
+  `main`.
+- Updates without a release timestamp (lock file maintenance, `custom.regex`
+  deps, images on `ghcr.io`) count as stable
+  (`minimumReleaseAgeBehaviour: timestamp-optional`) and automerge on green CI;
+  updates with a timestamp wait three days.
+- Lockfile maintenance runs on the first Wednesday of the month, away from
+  the Monday batch (preset tag, GitHub Actions), and automerges. A lock file
+  refresh has no release timestamp, so transitive updates get no cooldown.
+  A vulnerable transitive dependency can wait up to about five weeks.
 - Updates run in a daily window (before 6am, `Europe/Zurich`); open work is
   listed on the Dependency Dashboard issue.
 
