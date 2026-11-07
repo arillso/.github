@@ -58,7 +58,10 @@ This repository contains organization-wide defaults that GitHub automatically ap
 
 **CRITICAL SECURITY REQUIREMENT**:
 
-All GitHub Actions MUST be pinned to full commit SHA with version comment:
+All GitHub Actions MUST be pinned to full commit SHA with a full version comment
+(`# vX.Y.Z`, not a major tag like `# v4`). A major tag moves without a release,
+so Renovate proposes a digest update that has no release timestamp and skips
+the release-age cooldown:
 
 ```yaml
 # CORRECT - SHA pinned with version comment

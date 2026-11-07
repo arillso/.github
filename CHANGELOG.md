@@ -8,6 +8,17 @@ This is a rolling release - changes are deployed continuously to `main`.
 
 ## 2026-11-07
 
+### Changed
+
+- **Workflows and `templates/workflows/tag.yml`**: the 88 SHA-pinned actions
+  with a major-tag comment (`# v4`) now carry the exact version of the pinned
+  commit (`# v4.39.1`). Renovate tracked the moving major tag and proposed
+  digest updates without a release timestamp, which skipped the three-day
+  cooldown and raised the "did not have a releaseTimestamp" warning on the
+  Dependency Dashboard. Exact versions turn them into version updates with a
+  timestamp. Consumers need no action; repositories with their own `# vN` pins
+  see the same warning until they switch.
+
 ### ⚠ BREAKING
 
 - **renovate-base.json** Renovate now merges automerge PRs itself instead of
