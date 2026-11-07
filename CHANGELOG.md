@@ -54,6 +54,11 @@ This is a rolling release - changes are deployed continuously to `main`.
   with a letter (`custom.<name>` still matches) and the depName must not start
   with `(`. Covered by `scripts/tests/test-renovate-marker-regex.sh`, run by
   the new `renovate-marker-regex` job in `pull-request.yml`.
+- **renovate-base.json** digest updates of arillso's own Docker Hub images
+  (`arillso/**`, e.g. `arillso/ansible`) waive the release-age gate. Renovate
+  reported them without a release timestamp ("did not have a releaseTimestamp"
+  on the action.playbook Dependency Dashboard); the images are first-party and
+  built by arillso CI. Version updates keep their cooldown.
 
 ---
 
