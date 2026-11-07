@@ -66,6 +66,10 @@ This is a rolling release - changes are deployed continuously to `main`.
   `timestamp-optional` they already went through without a cooldown; the rule
   also lifts the 7-day major gate and bypasses a consumer's
   `timestamp-required`, which would otherwise hold them forever.
+- **renovate-base.json** digest updates of the `geerlingguy/docker-*-ansible`
+  Molecule images waive the release-age gate. These images publish only a
+  `latest` tag, so there is no version to pin and Renovate logged "did not have
+  a releaseTimestamp" on the ansible.system Dependency Dashboard.
 
 ---
 
