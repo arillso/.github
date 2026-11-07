@@ -6,6 +6,46 @@ This is a rolling release - changes are deployed continuously to `main`.
 
 ---
 
+## 2026-11-07
+
+### ⚠ BREAKING
+
+- **renovate-base.json** Renovate now merges automerge PRs itself instead of
+  enabling GitHub auto-merge (`platformAutomerge: false`), and rebases a PR
+  only on a merge conflict (`rebaseWhen: conflicted`). GitHub auto-merge waits
+  for the approval the `main-branch-protection` ruleset requires and ignores
+  the Renovate bypass; rebasing every PR that falls behind `main` re-runs the
+  full CI after each merge. Migration: keep the Renovate app (`2740`,
+  `always`) as bypass actor in `main-branch-protection` — all arillso
+  repositories with a ruleset have it as of today. Trade-offs: a merge waits
+  for the next Renovate run, and PRs are no longer re-tested against the
+  latest `main`. Ported from sbaerlocher/.github.
+- **renovate-base.json** `minimumReleaseAgeBehaviour: "timestamp-optional"`.
+  With Renovate merging its own PRs, the default `timestamp-required` would
+  leave `renovate/stability-days` pending forever for updates without a release
+  timestamp (lock file maintenance, `custom.regex` deps, non-Docker-Hub
+  images). They are now treated as stable and automerge on green CI; updates
+  with a timestamp still wait three days. Two rules waive the gate explicitly
+  for `ghcr.io` (package name and registryUrls form), which never reports a
+  timestamp, so the 7-day major gate no longer applies there.
+- **renovate-base.json** lock file maintenance runs on the first Wednesday of
+  the month instead of every Monday, with `minimumReleaseAge: null`. The
+  weekly run collided with the Monday batch (arillso/.github tag, GitHub
+  Actions). A lock file refresh has no release timestamp, so transitive
+  updates automerge without a cooldown. Trade-off: a vulnerable transitive dependency can wait up to about
+  five weeks. Consumers needing faster refreshes override
+  `lockFileMaintenance.schedule`.
+
+### Fixed
+
+- **renovate-base.json** the `# renovate: datasource=… depName=…` marker
+  manager no longer reads regex text as a marker: the datasource must start
+  with a letter (`custom.<name>` still matches) and the depName must not start
+  with `(`. Covered by `scripts/tests/test-renovate-marker-regex.sh`, run by
+  the new `renovate-marker-regex` job in `pull-request.yml`.
+
+---
+
 ## 2026-11-05
 
 ### Fixed

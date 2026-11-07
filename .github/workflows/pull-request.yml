@@ -288,6 +288,22 @@ jobs:
       - name: Assert the .rst manager spares placeholder and mutable refs
         run: scripts/tests/test-renovate-rst-manager.sh
 
+  # The `# renovate: datasource=… depName=…` marker manager in renovate-base.json
+  # scans every *.json file, a consumer's own renovate.json included. Regex text
+  # that contains the marker must not be read as one, or Renovate reports an
+  # unknown datasource as a lookup failure in the consumer. The test runs the
+  # matchString from the preset itself; it needs node and jq, both on the runner.
+  renovate-marker-regex:
+    name: Renovate Marker Regex Guard
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - name: Assert the marker manager skips regex text
+        run: scripts/tests/test-renovate-marker-regex.sh
+
   # The molecule customManager in renovate-ansible.json is paired with a
   # `pinDigests` rule, and pinning needs `autoReplaceStringTemplate`: Renovate's
   # field-wise rewrite can only change tokens the line already carries, while a

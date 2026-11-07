@@ -10,16 +10,17 @@
   "prConcurrentLimit": 5,
   "prHourlyLimit": 4,
   "osvVulnerabilityAlerts": true,
-  "platformAutomerge": true,
+  "platformAutomerge": false,
   "automergeType": "pr",
   "automergeStrategy": "squash",
-  "rebaseWhen": "behind-base-branch",
+  "rebaseWhen": "conflicted",
   "semanticCommits": "enabled",
   "separateMinorPatch": false,
   "separateMajorMinor": true,
   "separateMultipleMajor": true,
   "rangeStrategy": "bump",
   "minimumReleaseAge": "3 days",
+  "minimumReleaseAgeBehaviour": "timestamp-optional",
   "configMigration": true,
   "postUpdateOptions": ["gomodTidy", "npmDedupe", "pnpmDedupe"],
   "commitMessageAction": "Update",
@@ -84,12 +85,26 @@
       "groupName": "arillso/.github",
       "groupSlug": "arillso-github",
       "schedule": ["before 6am on monday"]
+    },
+    {
+      "description": "ghcr.io never reports a release timestamp: Renovate's docker datasource reads timestamps only from Docker Hub (`tag_last_pushed`). Under `minimumReleaseAgeBehaviour: timestamp-optional` these updates already merge without a cooldown, but log a 'did not have a releaseTimestamp' warning on every run; waiving the gate here makes that deliberate. This also lifts the 7-day major gate for ghcr.io images, which could never work without a timestamp. Two rules: the package name form and the registryUrls form (bare host from `registryUrlTemplate`).",
+      "matchDatasources": ["docker"],
+      "matchPackageNames": ["ghcr.io/**"],
+      "minimumReleaseAge": null
+    },
+    {
+      "description": "Same waiver when ghcr.io sits in registryUrls instead of the package name. Regex instead of a glob so the bare host form `https://ghcr.io` matches as well.",
+      "matchDatasources": ["docker"],
+      "matchRegistryUrls": ["/^https://ghcr\\.io(/|$)/"],
+      "minimumReleaseAge": null
     }
   ],
   "lockFileMaintenance": {
+    "description": "Monthly, the whole first Wednesday (day of month AND day of week must both match in Renovate cron), away from the Monday batch that bumps the arillso/.github tag and GitHub Actions on the same lockfile. A lock file refresh has no release timestamp, so the age gate is waived and the refresh automerges on green CI without a cooldown. Trade-off: vulnerabilityAlerts only cover dependencies declared in a package file, so a vulnerable transitive dependency can wait up to about five weeks for this refresh instead of one.",
     "enabled": true,
     "automerge": true,
-    "schedule": ["before 6am on monday"]
+    "minimumReleaseAge": null,
+    "schedule": ["* * 1-7 * 3"]
   },
   "vulnerabilityAlerts": {
     "enabled": true,
@@ -113,7 +128,7 @@
         "/Dockerfile$/"
       ],
       "matchStrings": [
-        "#\\s*renovate:\\s*datasource=(?<datasource>[^\\s]+)\\s+depName=(?<depName>[^\\s]+)(\\s+versioning=(?<versioning>[^\\s]+))?(\\s+extractVersion=(?<extractVersion>[^\\s]+))?\\s*\\n[^:]*:\\s*['\"]?(?<currentValue>[^'\"\\s@]+)(?:@(?<currentDigest>sha256:[a-f0-9]+))?['\"]?"
+        "#\\s*renovate:\\s*datasource=(?<datasource>[A-Za-z][\\w.-]*)\\s+depName=(?<depName>[^\\s(][^\\s]*)(\\s+versioning=(?<versioning>[^\\s]+))?(\\s+extractVersion=(?<extractVersion>[^\\s]+))?\\s*\\n[^:]*:\\s*['\"]?(?<currentValue>[^'\"\\s@]+)(?:@(?<currentDigest>sha256:[a-f0-9]+))?['\"]?"
       ],
       "versioningTemplate": "{{#if versioning}}{{{versioning}}}{{else}}semver{{/if}}"
     },
