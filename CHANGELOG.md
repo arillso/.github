@@ -59,6 +59,10 @@ This is a rolling release - changes are deployed continuously to `main`.
   reported them without a release timestamp ("did not have a releaseTimestamp"
   on the action.playbook Dependency Dashboard); the images are first-party and
   built by arillso CI. Version updates keep their cooldown.
+- **renovate-alpine.json** Alpine apk pins (repology datasource) waive the
+  release-age gate. Repology never reports a release timestamp, so every run
+  logged "did not have a releaseTimestamp" on the docker.ansible Dependency
+  Dashboard; the updates already went through without a cooldown.
 
 ---
 
