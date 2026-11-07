@@ -97,6 +97,13 @@
       "matchDatasources": ["docker"],
       "matchRegistryUrls": ["/^https://ghcr\\.io(/|$)/"],
       "minimumReleaseAge": null
+    },
+    {
+      "description": "Digest updates of arillso's own Docker Hub images (e.g. arillso/ansible, rebuilt under the same version tag by docker.ansible) have no release timestamp: the action.playbook Mend log of 2026-11-07 15:25 lists the arillso/ansible:2.21.5 digest update as the only timestamp-less upgrade, although Docker Hub reports tag_last_pushed for that tag. Waived explicitly because the images are first-party and built by arillso CI. Limited to digest updates, so version updates keep their cooldown.",
+      "matchDatasources": ["docker"],
+      "matchPackageNames": ["arillso/**", "docker.io/arillso/**", "index.docker.io/arillso/**"],
+      "matchUpdateTypes": ["digest"],
+      "minimumReleaseAge": null
     }
   ],
   "lockFileMaintenance": {
