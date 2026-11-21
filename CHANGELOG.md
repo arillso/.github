@@ -6,6 +6,19 @@ This is a rolling release - changes are deployed continuously to `main`.
 
 ---
 
+## 2026-11-21
+
+### Fixed
+
+- **renovate-base.json**: the `# renovate: datasource=... depName=...` comment
+  marker now also matches a YAML list item (`- "3.24.4"`) on the next line.
+  The pattern required a `key:` there and, finding none, read across lines up
+  to the next colon, so a marker above a list item extracted a word such as
+  `Check` as the version and never updated. In `docker.ansible` the Alpine
+  assertion in `tests/structure/container-test.yml` stayed behind every
+  `FROM alpine:` bump and failed the structure test (PRs #602, #625). The key
+  match is now limited to the line after the marker. Consumers need no action.
+
 ## 2026-11-07
 
 ### Changed
