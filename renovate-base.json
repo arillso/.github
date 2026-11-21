@@ -137,7 +137,7 @@
   "customManagers": [
     {
       "customType": "regex",
-      "description": "Update versions in comments (renovate: datasource=... depName=...). An optional @sha256:... suffix is captured separately as currentDigest, so digest-pinned image references (e.g. image: repo:tag@sha256:...) update the digest instead of mangling the whole string into currentValue.",
+      "description": "Update versions in comments (renovate: datasource=... depName=...). An optional @sha256:... suffix is captured separately as currentDigest, so digest-pinned image references (e.g. image: repo:tag@sha256:...) update the digest instead of mangling the whole string into currentValue. The value line is either a key (key: value) or a YAML list item (- value); the key match stays on that one line.",
       "managerFilePatterns": [
         "/\\.ya?ml$/",
         "/\\.json$/",
@@ -147,7 +147,7 @@
         "/Dockerfile$/"
       ],
       "matchStrings": [
-        "#\\s*renovate:\\s*datasource=(?<datasource>[A-Za-z][\\w.-]*)\\s+depName=(?<depName>[^\\s(][^\\s]*)(\\s+versioning=(?<versioning>[^\\s]+))?(\\s+extractVersion=(?<extractVersion>[^\\s]+))?\\s*\\n[^:]*:\\s*['\"]?(?<currentValue>[^'\"\\s@]+)(?:@(?<currentDigest>sha256:[a-f0-9]+))?['\"]?"
+        "#\\s*renovate:\\s*datasource=(?<datasource>[A-Za-z][\\w.-]*)\\s+depName=(?<depName>[^\\s(][^\\s]*)(\\s+versioning=(?<versioning>[^\\s]+))?(\\s+extractVersion=(?<extractVersion>[^\\s]+))?\\s*\\n(?:[^:\\n]*:|\\s*-)\\s*['\"]?(?<currentValue>[^'\"\\s@]+)(?:@(?<currentDigest>sha256:[a-f0-9]+))?['\"]?"
       ],
       "versioningTemplate": "{{#if versioning}}{{{versioning}}}{{else}}semver{{/if}}"
     },
